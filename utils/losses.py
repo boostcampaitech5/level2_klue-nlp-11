@@ -10,7 +10,13 @@
 
 import numpy as np
 import torch
+from torch import nn
 import torch.nn.functional as F
+
+num_per_cls = [
+    9534 * 2, 4284, 420, 380, 2103, 1320, 3573, 1195, 139, 48, 304, 193, 1001, 190, 534, 1234, 136, 795, 450, 98, 1866,
+    520, 66, 82, 418, 1130, 166, 40, 155, 96
+]
 
 
 def focal_loss(labels, logits, alpha, gamma):
@@ -43,16 +49,7 @@ def focal_loss(labels, logits, alpha, gamma):
     return focal_loss
 
 
-def CB_loss(labels,
-            logits,
-            samples_per_cls=[
-                9534, 4284, 420, 380, 2103, 1320, 3573, 1195, 139, 48, 304, 193, 1001, 190, 534, 1234, 136, 795, 450,
-                98, 1866, 520, 66, 82, 418, 1130, 166, 40, 155, 96
-            ],
-            no_of_classes=30,
-            loss_type="focal",
-            beta=0.999,
-            gamma=0.5):
+def CB_loss(labels, logits, samples_per_cls=num_per_cls, no_of_classes=30, loss_type="focal", beta=0.999, gamma=0.5):
     """Compute the Class Balanced Loss between `logits` and the ground truth `labels`.
     Class Balanced Loss: ((1-beta)/(1-beta^n))*Loss(labels, logits)
     where Loss is one of the standard losses used for Neural Networks.
@@ -67,8 +64,9 @@ def CB_loss(labels,
     Returns:
       cb_loss: A float tensor representing class balanced loss
     """
+    # samples_per_cls = torch.Tensor([sum(labels == i) for i in range(no_of_classes)])
     effective_num = 1.0 - np.power(beta, samples_per_cls)
-    weights = (1.0 - beta) / np.array(effective_num)
+    weights = (1.0 - beta) / (np.array(effective_num))
     weights = weights / np.sum(weights) * no_of_classes
 
     labels_one_hot = F.one_hot(labels, no_of_classes).float()
@@ -91,3 +89,32 @@ def CB_loss(labels,
         pred = logits.softmax(dim=1)
         cb_loss = F.binary_cross_entropy(input=pred, target=labels_one_hot, weight=weights)
     return cb_loss
+
+
+class LDAMLoss(nn.Module):
+
+    def __init__(self, cls_num_list=num_per_cls, max_m=0.5, weight=None, s=30):
+        super(LDAMLoss, self).__init__()
+        m_list = 1.0 / np.sqrt(np.sqrt(cls_num_list))
+        m_list = m_list * (max_m / np.max(m_list))
+        m_list = torch.cuda.FloatTensor(m_list)
+        self.m_list = m_list
+        assert s > 0
+        self.s = s
+        self.weight = weight
+        if torch.cuda.is_available():
+            self.weight = self.weight.cuda()
+
+    def forward(self, target, x):
+        index = torch.zeros_like(x, dtype=torch.bool)
+        index.scatter_(1, target.data.view(-1, 1), 1)
+
+        index_float = index.type(torch.cuda.FloatTensor)
+        batch_m = torch.matmul(self.m_list[None, :], index_float.transpose(0, 1))
+        batch_m = batch_m.view((-1, 1))
+        x_m = x - batch_m
+
+        output = torch.where(index, x_m, x)
+        if torch.cuda.is_available():
+            output = output.cuda()
+        return F.cross_entropy(self.s * output, target, weight=self.weight)

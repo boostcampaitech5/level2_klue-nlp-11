@@ -10,18 +10,20 @@ def main():
     seed = get_seed()
     set_seed(*seed)
 
-    wandb_logger = WandbLogger(project="klue-re")
-    dataloader = Dataloader('klue/roberta-large', 12, 12, True, "~/dataset/train/train.csv",
-                            "~/dataset/train/train.csv", "~/dataset/train/train.csv", "~/dataset/test/test_data.csv")
+    wandb_logger = WandbLogger(project="klue-re-001", name=f"seed:{'_'.join(map(str, seed))}")
+    dataloader = Dataloader('klue/roberta-large', False, 32, 32, True, "~/dataset/train/train.csv",
+                            "~/dataset/test/test_cheat.csv", "~/dataset/test/test_cheat.csv",
+                            "~/dataset/test/test_data.csv")
 
-    total_steps = warmup_steps = None
-    model = BaseModel(
-        'klue/roberta-large', # model name
-        1e-5,                 # lr
-        0.01,                 # weight decay
-        "CB",                 # loss function
-        None,                 # warm up steps
-        None                  # total steps
+    total_steps = (32470 // (12 * 4) + (32470 % (12 * 4) != 0)) * 5
+    warmup_steps = int(0.1 * (32470 // (12 * 4) + (32470 % (12 * 4) != 0)))
+    model = TypedEntityMarkerPuncModel(
+        'klue/roberta-large',           # model name
+        3e-5,                           # lr
+        0.01,                           # weight decay
+        "LDAM",                         # loss function
+        warmup_steps,                   # warm up steps
+        total_steps                     # total steps
     )
 
     # gpu가 없으면 accelerator='cpu', 있으면 accelerator='gpu'
@@ -32,7 +34,8 @@ def main():
         accelerator='gpu',                      # GPU 사용
         # # dataloader를 매 epoch마다 reload해서 resampling
         # reload_dataloaders_every_n_epochs=1,
-        max_epochs=3,                           # 최대 epoch 수
+        accumulate_grad_batches=4,              # 4step만큼 합친 후 역전파
+        max_epochs=5,                           # 최대 epoch 수
         logger=wandb_logger,                    # wandb logger 사용
         log_every_n_steps=1,                    # 1 step마다 로그 기록
         val_check_interval=0.5,                # 0.25 epoch마다 validation

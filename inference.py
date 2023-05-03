@@ -3,6 +3,7 @@ from pytorch_lightning.loggers import WandbLogger
 from utils.seed import * # seed setting module
 from dataloader import *
 from models import *
+import torch.nn.functional as F
 
 
 def num_to_label(label):
@@ -19,7 +20,7 @@ def num_to_label(label):
 
 
 def main():
-    wandb_logger = WandbLogger(project="klue-re")
+    # wandb_logger = WandbLogger(project="klue-re")
     dataloader = Dataloader('klue/roberta-large', 12, 12, True, "~/dataset/train/train.csv",
                             "~/dataset/train/train.csv", "~/dataset/test/test_cheat.csv",
                             "~/dataset/test/test_data.csv")
@@ -33,7 +34,7 @@ def main():
     #     None,                 # warm up steps
     #     None                  # total steps
     # )
-    model = BaseModel.load_from_checkpoint("./save/klue_re_001_val_f1=0.9257.ckpt")
+    model = BaseModel.load_from_checkpoint("./save/klue_re_001_val_f1=71.1218.ckpt")
 
     # gpu가 없으면 accelerator='cpu', 있으면 accelerator='gpu'
     trainer = pl.Trainer(
@@ -44,11 +45,12 @@ def main():
 
     # trainer.test(model=model, datamodule=dataloader)
     predictions_prob = torch.cat(trainer.predict(model=model, datamodule=dataloader))
+    predictions_prob = F.softmax(predictions_prob, -1)
     predictions_label = predictions_prob.argmax(-1).tolist()
     predictions_prob = predictions_prob.tolist()
     predictions = num_to_label(predictions_label)
 
-    output = pd.read_csv("./dataset/sample_submission.csv")
+    output = pd.read_csv("~/dataset/sample_submission.csv")
     output["pred_label"] = predictions
     output["probs"] = predictions_prob
     output.to_csv("output.csv", index=False)
