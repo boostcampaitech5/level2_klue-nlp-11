@@ -140,14 +140,14 @@ class Dataloader(pl.LightningDataModule):
                     tmp.extend([
                         item[self.text_column][:subj_start],
                         f'[SUBJ] [{subj_entity}] ' + item[self.text_column][subj_start:subj_end + 1] + ' [/SUBJ]',
-                        item[self.text_column][subj_end + 1:obj_start], '[OBJ] [{obj_entity}] ',
+                        item[self.text_column][subj_end + 1:obj_start], f'[OBJ] [{obj_entity}] ',
                         item[self.text_column][obj_start:obj_end + 1], ' [/OBJ]', item[self.text_column][obj_end + 1:]
                     ])
                 elif subj_start > obj_start:
                     tmp.extend([
                         item[self.text_column][:obj_start],
-                        '[OBJ] [{obj_entity}] ' + item[self.text_column][obj_start:obj_end + 1] + ' [/OBJ]',
-                        item[self.text_column][obj_end + 1:subj_start], '[SUBJ] [{subj_entity}] ',
+                        f'[OBJ] [{obj_entity}] ' + item[self.text_column][obj_start:obj_end + 1] + ' [/OBJ]',
+                        item[self.text_column][obj_end + 1:subj_start], f'[SUBJ] [{subj_entity}] ',
                         item[self.text_column][subj_start:subj_end + 1], ' [/SUBJ]',
                         item[self.text_column][subj_end + 1:]
                     ])

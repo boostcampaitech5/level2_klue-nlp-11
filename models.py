@@ -10,7 +10,7 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 import pytorch_lightning as pl
 from utils.losses import *
 from utils.metrics import *
-# from sklearn.metrics import accuracy_score as klue_re_acc
+import torch.nn.functional as F
 
 
 class FullyConnectedLayer(nn.Module):
@@ -32,13 +32,14 @@ class FullyConnectedLayer(nn.Module):
 class BaseModel(pl.LightningModule):
 
     def __init__(
-        self,
-        model_name,   # pretrained model name
-        lr,
-        weight_decay,
-        loss_func,    # loss function type
-        warmup_steps, # warm up steps for learning rate scheduler
-        total_steps   # epochs * iteration per epoch, for linear decay scheduler
+            self,
+            model_name,     # pretrained model name
+            lr,
+            weight_decay,
+            loss_func,      # loss function type
+            warmup_steps,   # warm up steps for learning rate scheduler
+            total_steps,    # epochs * iteration per epoch, for linear decay scheduler
+            LDAM_start=500, # DRW start step
     ):
         super().__init__()
         self.save_hyperparameters()
@@ -49,29 +50,65 @@ class BaseModel(pl.LightningModule):
         self.warmup_steps = warmup_steps
         self.total_steps = total_steps
         self.config = AutoConfig.from_pretrained(model_name)
-        self.spec_tag1, self.spec_tag2, self.spec_tag3, self.spec_tag4 = range(32000, 32004)
-        self.scheme = 2
         self.LDAM_weight = torch.ones(30)
 
         # 사용할 모델을 호출
         self.plm = RobertaModel.from_pretrained(model_name, config=self.config)
-
-        # 추가된 special tokens에 따른 embedding layer size 조정
-        self.plm.resize_token_embeddings(32010)
 
         # Loss 계산을 위해 사용될 손실함수를 호출
         if loss_func == "CB":
             self.loss_func = CB_loss
         elif loss_func == "LDAM":
             self.loss_func = LDAMLoss(weight=self.LDAM_weight)
+        elif loss_func == "CE":
+            self.loss_func = nn.CrossEntropyLoss()
         else:
             raise ValueError("CB, LDAM이외의 함수는 아직 지원x")
+
+    def configure_optimizers(self):
+        optimizer = torch.optim.AdamW(self.parameters(), lr=self.lr, weight_decay=self.weight_decay)
+        # warmup stage 있는 경우
+        if self.warmup_steps is not None:
+            scheduler = transformers.get_linear_schedule_with_warmup(optimizer=optimizer,
+                                                                     num_warmup_steps=self.warmup_steps,
+                                                                     num_training_steps=self.total_steps)
+            return ([optimizer], [{
+                'scheduler': scheduler,
+                'interval': 'step',
+                'frequency': 1,
+                'reduce_on_plateau': False,
+                'monitor': 'val_loss',
+            }])
+        # warmup stage 없는 경우
+        else:
+            scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.96)
+            return [optimizer], [scheduler]
+
+
+# https://github.com/uf-hobi-informatics-lab/ClinicalTransformerRelationExtraction 참조
+class ClinicalTransformer(BaseModel):
+
+    def __init__(
+            self,
+            model_name,     # pretrained model name
+            lr,
+            weight_decay,
+            loss_func,      # loss function type
+            warmup_steps,   # warm up steps for learning rate scheduler
+            total_steps,    # epochs * iteration per epoch, for linear decay scheduler
+            LDAM_start=500, # DRW start step
+    ):
+        super().__init__(model_name, lr, weight_decay, loss_func, warmup_steps, total_steps, LDAM_start)
+        self.spec_tag1, self.spec_tag2, self.spec_tag3, self.spec_tag4 = range(32000, 32004)
+        self.scheme = 2
+
+        # 추가된 special tokens에 따른 embedding layer size 조정
+        self.plm.resize_token_embeddings(32010)
 
         self.dense1 = FullyConnectedLayer(self.config.hidden_size * 5, 768, 0.1)
         self.dense2 = FullyConnectedLayer(768, 30, 0.1)
         self.classifier = FullyConnectedLayer(30, 30, 0.1)
 
-    # https://github.com/uf-hobi-informatics-lab/ClinicalTransformerRelationExtraction 참조
     @staticmethod
     def special_tag_representation(seq_output, input_ids, special_tag):
         spec_idx = (input_ids == special_tag).nonzero(as_tuple=False)
@@ -173,25 +210,6 @@ class BaseModel(pl.LightningModule):
         logits = self(x)
         return logits
 
-    def configure_optimizers(self):
-        optimizer = torch.optim.AdamW(self.parameters(), lr=self.lr, weight_decay=self.weight_decay)
-        # warmup stage 있는 경우
-        if self.warmup_steps is not None:
-            scheduler = transformers.get_linear_schedule_with_warmup(optimizer=optimizer,
-                                                                     num_warmup_steps=self.warmup_steps,
-                                                                     num_training_steps=self.total_steps)
-            return ([optimizer], [{
-                'scheduler': scheduler,
-                'interval': 'step',
-                'frequency': 1,
-                'reduce_on_plateau': False,
-                'monitor': 'val_loss',
-            }])
-        # warmup stage 없는 경우
-        else:
-            scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.96)
-            return [optimizer], [scheduler]
-
 
 class TypedEntityMarkerPuncModel(BaseModel):
 
@@ -208,50 +226,14 @@ class TypedEntityMarkerPuncModel(BaseModel):
         super().__init__(model_name, lr, weight_decay, loss_func, warmup_steps, total_steps)
         self.save_hyperparameters()
 
-        self.model_name = model_name
-        self.lr = lr
-        self.weight_decay = weight_decay
-        self.warmup_steps = warmup_steps
-        self.total_steps = total_steps
-        self.config = AutoConfig.from_pretrained(model_name)
-        self.LDAM_weight = torch.ones(30)
         self.LDAM_start = LDAM_start
-
-        # 사용할 모델을 호출
-        self.plm = RobertaModel.from_pretrained(model_name, config=self.config)
-
-        # Loss 계산을 위해 사용될 손실함수를 호출
-        if loss_func == "CB":
-            self.loss_func = CB_loss
-        elif loss_func == "LDAM":
-            self.loss_func = LDAMLoss(weight=self.LDAM_weight)
-        else:
-            raise ValueError("CB, LDAM이외의 함수는 아직 지원x")
 
         self.classifier = nn.Sequential(nn.Linear(2 * self.config.hidden_size, self.config.hidden_size), nn.ReLU(),
                                         nn.Dropout(p=0.1), nn.Linear(self.config.hidden_size, 30))
 
-    def forward(self,
-                input_ids=None,
-                attention_mask=None,
-                token_type_ids=None,
-                position_ids=None,
-                head_mask=None,
-                inputs_embeds=None,
-                labels=None,
-                output_attentions=None,
-                output_hidden_states=None,
-                ss=None,
-                os=None,
-                **kwargs):
+    def forward(self, input_ids=None, ss=None, os=None, **kwargs):
 
-        outputs = self.plm(input_ids,
-                           attention_mask=attention_mask,
-                           token_type_ids=token_type_ids,
-                           position_ids=position_ids,
-                           head_mask=head_mask,
-                           output_attentions=output_attentions,
-                           output_hidden_states=output_hidden_states)
+        outputs = self.plm(input_ids)
 
         seq_output = outputs[0]
         # pooled_output = outputs[1]

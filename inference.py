@@ -1,6 +1,3 @@
-from pytorch_lightning.callbacks import LearningRateMonitor, EarlyStopping, ModelCheckpoint
-from pytorch_lightning.loggers import WandbLogger
-from utils.seed import * # seed setting module
 from dataloader import *
 from models import *
 import torch.nn.functional as F
@@ -21,20 +18,11 @@ def num_to_label(label):
 
 def main():
     # wandb_logger = WandbLogger(project="klue-re")
-    dataloader = Dataloader('klue/roberta-large', 12, 12, True, "~/dataset/train/train.csv",
-                            "~/dataset/train/train.csv", "~/dataset/test/test_cheat.csv",
+    dataloader = Dataloader('klue/roberta-large', False, 12, 12, True, "~/dataset/train/train.csv",
+                            "~/dataset/test/test_cheat.csv", "~/dataset/test/test_cheat.csv",
                             "~/dataset/test/test_data.csv")
 
-    total_steps = warmup_steps = None
-    # model = BaseModel(
-    #     'klue/roberta-large', # model name
-    #     1e-5,                 # lr
-    #     0.01,                 # weight decay
-    #     "CB",                 # loss function
-    #     None,                 # warm up steps
-    #     None                  # total steps
-    # )
-    model = BaseModel.load_from_checkpoint("./save/klue_re_001_val_f1=71.1218.ckpt")
+    model = TypedEntityMarkerPuncModel.load_from_checkpoint("./save/klue_re_0002_val_f1=69.1298.ckpt")
 
     # gpu가 없으면 accelerator='cpu', 있으면 accelerator='gpu'
     trainer = pl.Trainer(

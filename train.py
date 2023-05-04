@@ -28,20 +28,19 @@ def main():
 
     # gpu가 없으면 accelerator='cpu', 있으면 accelerator='gpu'
     trainer = pl.Trainer(
-        # fast_dev_run=True,                      # 검증용
+        # fast_dev_run=True,                    # 검증용
         precision=16,                           # 16-bit mixed precision
         gpus = 1,
         accelerator='gpu',                      # GPU 사용
-        # # dataloader를 매 epoch마다 reload해서 resampling
-        # reload_dataloaders_every_n_epochs=1,
+        # reload_dataloaders_every_n_epochs=1,  # dataloader를 매 epoch마다 reload해서 resampling
         accumulate_grad_batches=4,              # 4step만큼 합친 후 역전파
         max_epochs=5,                           # 최대 epoch 수
         logger=wandb_logger,                    # wandb logger 사용
         log_every_n_steps=1,                    # 1 step마다 로그 기록
-        val_check_interval=0.5,                # 0.25 epoch마다 validation
+        val_check_interval=0.5,                 # 0.25 epoch마다 validation
         callbacks=[
-            # learning rate를 매 step마다 기록
-            LearningRateMonitor(logging_interval='step'),
+
+            LearningRateMonitor(logging_interval='step'), # learning rate를 매 step마다 기록
             EarlyStopping(                      # validation pearson이 8번 이상 개선되지 않으면 학습을 종료
                 'val_f1',
                 patience=8,
