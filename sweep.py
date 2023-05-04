@@ -73,9 +73,9 @@ def main():
             run.name = f"seed:{'_'.join(map(str,seed))}"
 
             wandb_logger = WandbLogger(project="klue-re-sweep")
-            dataloader = Dataloader(config.model_name, False, config.batch_size, config.batch_size, True,
-                                    "~/dataset/train/train.csv", "~/dataset/test/test_cheat.csv",
-                                    "~/dataset/test/test_cheat.csv", "~/dataset/test/test_data.csv")
+            dataloader = EntityVerbalizedDataloader(config.model_name, False, config.batch_size, config.batch_size,
+                                                    True, "~/dataset/train/train.csv", "~/dataset/train/val.csv",
+                                                    "~/dataset/train/val.csv", "~/dataset/test/test_data.csv")
             warmup_steps = total_steps = None
             if "warm_up_ratio" in config and config.warm_up_ratio:
                 total_steps = (32470 // (12 * 4) + (32470 % (12 * 4) != 0)) * 5
@@ -124,13 +124,14 @@ def main():
 
     # Sweep 생성
     sweep_id = wandb.sweep(
-        sweep=sweep_config,     # config 딕셔너리 추가
-        project="klue-re-sweep" # project의 이름 추가
+        sweep=sweep_config,              # config 딕셔너리 추가,
+        entity="line1029-academic-team", # 팀 이름
+        project="klue-re-sweep-001"      # project의 이름 추가
     )
     wandb.agent(
-        sweep_id=sweep_id,      # sweep의 정보를 입력
-        function=sweep_train,   # train이라는 모델을 학습하는 코드를
-        count=80                # 총 n회 실행
+        sweep_id=sweep_id,               # sweep의 정보를 입력
+        function=sweep_train,            # train이라는 모델을 학습하는 코드를
+        count=80                         # 총 n회 실행
     )
 
 

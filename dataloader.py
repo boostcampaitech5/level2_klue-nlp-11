@@ -6,7 +6,7 @@ import torch
 
 import pytorch_lightning as pl
 
-ENTITY_MAP = {"PER": "사람/인명", "ORG": "조직/기관", "LOC": "장소/위치", "POH": "기타/고유명사", "DAT": "시간/날짜", "NOH": "수량/갯수"}
+ENTITY_MAP = {"PER": "사람", "ORG": "조직", "LOC": "장소", "POH": "기타", "DAT": "날짜", "NOH": "수량"}
 
 
 class Dataset(torch.utils.data.Dataset):
@@ -212,3 +212,75 @@ class Dataloader(pl.LightningDataModule):
 
     def predict_dataloader(self):
         return torch.utils.data.DataLoader(self.predict_dataset, batch_size=self.val_batch_size)
+
+
+class EntityVerbalizedDataloader(Dataloader):
+
+    def tokenize(self, dataframe):
+        res, ss_arr, os_arr = [], [], []
+        for idx, item in tqdm(dataframe.iterrows(), desc='tokenizing', total=len(dataframe)):
+            # 입력 문장의 entity 위치 파악
+            _, subj_start, subj_end, subj_entity = [
+                x.split(": ")[1].strip("'") for x in item[self.subj_column][1:-1].split(", '")
+            ]
+            _, obj_start, obj_end, obj_entity = [
+                x.split(": ")[1].strip("'") for x in item[self.obj_column][1:-1].split(", '")
+            ]
+            subj_start = int(subj_start)
+            subj_end = int(subj_end)
+            obj_start = int(obj_start)
+            obj_end = int(obj_end)
+            tmp = []
+            if self.use_tokens:
+                if subj_start < obj_start:
+                    tmp.extend([
+                        item[self.text_column][:subj_start],
+                        f'[SUBJ] [{subj_entity}] ' + item[self.text_column][subj_start:subj_end + 1] + ' [/SUBJ]',
+                        item[self.text_column][subj_end + 1:obj_start], f'[OBJ] [{obj_entity}] ',
+                        item[self.text_column][obj_start:obj_end + 1], ' [/OBJ]', item[self.text_column][obj_end + 1:]
+                    ])
+                elif subj_start > obj_start:
+                    tmp.extend([
+                        item[self.text_column][:obj_start],
+                        f'[OBJ] [{obj_entity}] ' + item[self.text_column][obj_start:obj_end + 1] + ' [/OBJ]',
+                        item[self.text_column][obj_end + 1:subj_start], f'[SUBJ] [{subj_entity}] ',
+                        item[self.text_column][subj_start:subj_end + 1], ' [/SUBJ]',
+                        item[self.text_column][subj_end + 1:]
+                    ])
+                else:
+                    raise ValueError("subj-obj overlapped")
+            else:
+                if subj_start < obj_start:
+                    tmp.extend([
+                        item[self.text_column][:subj_start],
+                        f'@ * {ENTITY_MAP[subj_entity]} * ' + item[self.text_column][subj_start:subj_end + 1] + ' @',
+                        item[self.text_column][subj_end + 1:obj_start], f'# ^ {ENTITY_MAP[obj_entity]} ^ ',
+                        item[self.text_column][obj_start:obj_end + 1], ' #', item[self.text_column][obj_end + 1:]
+                    ])
+                elif subj_start > obj_start:
+                    tmp.extend([
+                        item[self.text_column][:obj_start],
+                        f'# ^ {ENTITY_MAP[obj_entity]} ^ ' + item[self.text_column][obj_start:obj_end + 1] + ' #',
+                        item[self.text_column][obj_end + 1:subj_start], f'@ * {ENTITY_MAP[subj_entity]} * ',
+                        item[self.text_column][subj_start:subj_end + 1], ' @', item[self.text_column][subj_end + 1:]
+                    ])
+                else:
+                    raise ValueError("subj-obj overlapped")
+            ss = len(self.tokenizer(tmp[0], add_special_tokens=False)['input_ids']) + 1
+            os = ss + len(self.tokenizer(tmp[1], add_special_tokens=False)['input_ids']) + len(
+                self.tokenizer(tmp[2], add_special_tokens=False)['input_ids'])
+            if subj_start > obj_start:
+                ss, os = os, ss
+            tmp.append(
+                f"{item[self.text_column][subj_start:subj_end + 1]}는 {item[self.text_column][subj_start:subj_end + 1]}에 대해서 {ENTITY_MAP[subj_entity]} 와 {ENTITY_MAP[obj_entity]} 사이의 관계를 가진다."
+            )
+            text = "".join(tmp)
+            outputs = self.tokenizer(text,
+                                     add_special_tokens=True,
+                                     max_length=256,
+                                     padding='max_length',
+                                     truncation=True)
+            res.append(outputs['input_ids'])
+            ss_arr.append(ss)
+            os_arr.append(os)
+        return res, ss_arr, os_arr
