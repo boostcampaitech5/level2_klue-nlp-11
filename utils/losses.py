@@ -19,7 +19,7 @@ num_per_cls = [
 ]
 
 
-def focal_loss(labels, logits, alpha, gamma):
+def focal_loss(logits, labels, alpha, gamma):
     """Compute the focal loss between `logits` and the ground truth `labels`.
     Focal loss = -alpha_t * (1-pt)^gamma * log(pt)
     where pt is the probability of being classified to the true class.
@@ -49,7 +49,7 @@ def focal_loss(labels, logits, alpha, gamma):
     return focal_loss
 
 
-def CB_loss(labels, logits, samples_per_cls=num_per_cls, no_of_classes=30, loss_type="focal", beta=0.999, gamma=0.5):
+def CB_loss(logits, labels, samples_per_cls=num_per_cls, no_of_classes=30, loss_type="focal", beta=0.999, gamma=0.5):
     """Compute the Class Balanced Loss between `logits` and the ground truth `labels`.
     Class Balanced Loss: ((1-beta)/(1-beta^n))*Loss(labels, logits)
     where Loss is one of the standard losses used for Neural Networks.
@@ -82,7 +82,7 @@ def CB_loss(labels, logits, samples_per_cls=num_per_cls, no_of_classes=30, loss_
     weights = weights.repeat(1, no_of_classes)
 
     if loss_type == "focal":
-        cb_loss = focal_loss(labels_one_hot, logits, weights, gamma)
+        cb_loss = focal_loss(logits, labels_one_hot, weights, gamma)
     elif loss_type == "sigmoid":
         cb_loss = F.binary_cross_entropy_with_logits(input=logits, target=labels_one_hot, weights=weights)
     elif loss_type == "softmax":
@@ -105,7 +105,7 @@ class LDAMLoss(nn.Module):
         if torch.cuda.is_available():
             self.weight = self.weight.cuda()
 
-    def forward(self, target, x):
+    def forward(self, x, target):
         index = torch.zeros_like(x, dtype=torch.bool)
         index.scatter_(1, target.data.view(-1, 1), 1)
 

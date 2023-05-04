@@ -40,13 +40,10 @@ def main(path):
     output = pd.read_csv("~/dataset/sample_submission.csv")
     output["pred_label"] = predictions
     output["probs"] = predictions_prob
-    output.to_csv(f"output-{path}.csv", index=False)
+    output.to_csv(f"output-{path[:-5]}.csv", index=False)
 
 
 if __name__ == "__main__":
-    save_path = [
-        'klue_re_0002_val_f1=69.1298.ckpt', 'klue_re_0012_val_f1=69.1136.ckpt', 'klue_re_0014_val_f1=69.7686.ckpt',
-        'klue_re_0011_val_f1=69.0344.ckpt', 'klue_re_0013_val_f1=68.4460.ckpt', 'klue_re_0017_val_f1=67.9602.ckpt'
-    ]
+    save_path = ['klue_re_23-05-04-12:54_0001_val_f1=88.4855.ckpt']
     for path in save_path:
         main(path)

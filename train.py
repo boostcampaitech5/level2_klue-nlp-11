@@ -12,8 +12,9 @@ def main():
     set_seed(*seed)
 
     wandb_logger = WandbLogger(project="klue-re-001", name=f"seed:{'_'.join(map(str, seed))}")
-    dataloader = Dataloader('klue/roberta-large', False, 32, 32, True, "~/dataset/train/train.csv",
-                            "~/dataset/train/val.csv", "~/dataset/train/val.csv", "~/dataset/test/test_data.csv")
+    dataloader = EntityVerbalizedDataloader('klue/roberta-large', False, 32, 32, True,
+                                            "~/dataset/train/train_split.csv", "~/dataset/train/val.csv",
+                                            "~/dataset/train/val.csv", "~/dataset/test/test_data.csv")
 
     total_steps = (32470 // (12 * 4) + (32470 % (12 * 4) != 0)) * 5
     warmup_steps = int(0.1 * (32470 // (12 * 4) + (32470 % (12 * 4) != 0)))
@@ -21,7 +22,7 @@ def main():
         'klue/roberta-large',           # model name
         3e-5,                           # lr
         0.01,                           # weight decay
-        "LDAM",                         # loss function
+        "CE",                           # loss function
         warmup_steps,                   # warm up steps
         total_steps                     # total steps
     )

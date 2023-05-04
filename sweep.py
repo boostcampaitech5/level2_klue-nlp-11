@@ -25,10 +25,10 @@ def main():
             'model_name': {
                 'values': [
                     'klue/roberta-large',
-                                                     # 'monologg/koelectra-base-v3-discriminator',
-                                                     # 'beomi/KcELECTRA-base',
-                                                     # 'rurupang/roberta-base-finetuned-sts',
-                                                     # 'snunlp/KR-ELECTRA-discriminator'
+                    # 'monologg/koelectra-base-v3-discriminator',
+                    # 'beomi/KcELECTRA-base',
+                    # 'rurupang/roberta-base-finetuned-sts',
+                    # 'snunlp/KR-ELECTRA-discriminator'
                 ]
             },
             'warm_up_ratio': {
@@ -38,22 +38,17 @@ def main():
                 'values': [0, 0.01]
             },
             'loss_func': {
-                'values': ["LDAM", "CB"]
+                'values': ["CE", "CB"]
             },
-            'LDAM_start': {
-                'values': [250, 500, 1000]
-            }
+            # 'LDAM_start': {
+            #     'values': [250, 500, 1000]
+            # }
         },
         'metric': {
             'name': 'val_f1',
             'goal': 'maximize'
         }
-    }
-
-    # set version to save model
-    def set_version():
-        for i in range(1, 1000):
-            yield i
+    } # yapf: disable
 
     ver = set_version()
 
@@ -75,7 +70,7 @@ def main():
 
             wandb_logger = WandbLogger(project="klue-re-sweep")
             dataloader = EntityVerbalizedDataloader(config.model_name, False, config.batch_size, config.batch_size,
-                                                    True, "~/dataset/train/train.csv", "~/dataset/train/val.csv",
+                                                    True, "~/dataset/train/train_split.csv", "~/dataset/train/val.csv",
                                                     "~/dataset/train/val.csv", "~/dataset/test/test_data.csv")
             warmup_steps = total_steps = None
             if "warm_up_ratio" in config and config.warm_up_ratio:
@@ -88,8 +83,9 @@ def main():
                 config.loss_func,                            # loss function
                 warmup_steps,                                # warm up steps
                 total_steps,                                 # total steps
-                config.LDAM_start)
-                                                             # gpu가 없으면 accelerator='cpu', 있으면 accelerator='gpu'
+                # config.LDAM_start
+                ) # yapf: disable
+            # gpu가 없으면 accelerator='cpu', 있으면 accelerator='gpu'
             trainer = pl.Trainer(
                 # fast_dev_run=True,                    # 검증용
                 precision=16,                           # 16-bit mixed precision
@@ -101,7 +97,7 @@ def main():
                 max_epochs=config.max_epoch,                           # 최대 epoch 수
                 logger=wandb_logger,                    # wandb logger 사용
                 log_every_n_steps=1,                    # 1 step마다 로그 기록
-                val_check_interval=0.5,                 # 0.25 epoch마다 validation
+                val_check_interval=0.25,                # 0.25 epoch마다 validation
                 callbacks=[
                     # learning rate를 매 step마다 기록
                     LearningRateMonitor(logging_interval='step'),

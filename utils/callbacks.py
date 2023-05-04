@@ -1,5 +1,5 @@
 import torch
-from pytorch_lightning import ModelCheckpoint
+from pytorch_lightning.callbacks import ModelCheckpoint
 import pytorch_lightning as pl
 from datetime import datetime
 
@@ -22,7 +22,8 @@ class CustomModelCheckpoint(ModelCheckpoint):
 
 def get_time_str():
     now = datetime.now()
-    return now.strftime('%y-%m-%d-%H:%M')
+    return now.strftime('%y-%m-%d-%H-%M')
+
 
 # set version to save model
 def set_version():
