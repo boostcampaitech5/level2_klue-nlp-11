@@ -227,6 +227,8 @@ class TypedEntityMarkerPuncModel(BaseModel):
         self.save_hyperparameters()
 
         self.LDAM_start = LDAM_start
+        self.dense1 = FullyConnectedLayer(self.config.hidden_size * 5, 768, 0.1)
+        self.dense2 = FullyConnectedLayer(768, 30, 0.1)
 
         self.classifier = nn.Sequential(nn.Linear(2 * self.config.hidden_size, self.config.hidden_size), nn.ReLU(),
                                         nn.Dropout(p=0.1), nn.Linear(self.config.hidden_size, 30))

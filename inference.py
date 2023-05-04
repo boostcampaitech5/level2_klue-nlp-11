@@ -16,13 +16,12 @@ def num_to_label(label):
     return origin_label
 
 
-def main():
+def main(path):
     # wandb_logger = WandbLogger(project="klue-re")
-    dataloader = Dataloader('klue/roberta-large', False, 12, 12, True, "~/dataset/train/train.csv",
-                            "~/dataset/test/test_cheat.csv", "~/dataset/test/test_cheat.csv",
-                            "~/dataset/test/test_data.csv")
+    dataloader = Dataloader('klue/roberta-large', False, 32, 32, True, "~/dataset/train/val.csv",
+                            "~/dataset/train/val.csv", "~/dataset/train/val.csv", "~/dataset/test/test_data.csv")
 
-    model = TypedEntityMarkerPuncModel.load_from_checkpoint("./save/klue_re_0002_val_f1=69.1298.ckpt")
+    model = TypedEntityMarkerPuncModel.load_from_checkpoint("./save/" + path)
 
     # gpu가 없으면 accelerator='cpu', 있으면 accelerator='gpu'
     trainer = pl.Trainer(
@@ -41,8 +40,13 @@ def main():
     output = pd.read_csv("~/dataset/sample_submission.csv")
     output["pred_label"] = predictions
     output["probs"] = predictions_prob
-    output.to_csv("output.csv", index=False)
+    output.to_csv(f"output-{path}.csv", index=False)
 
 
 if __name__ == "__main__":
-    main()
+    save_path = [
+        'klue_re_0002_val_f1=69.1298.ckpt', 'klue_re_0012_val_f1=69.1136.ckpt', 'klue_re_0014_val_f1=69.7686.ckpt',
+        'klue_re_0011_val_f1=69.0344.ckpt', 'klue_re_0013_val_f1=68.4460.ckpt', 'klue_re_0017_val_f1=67.9602.ckpt'
+    ]
+    for path in save_path:
+        main(path)

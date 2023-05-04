@@ -1,6 +1,7 @@
 import torch
 from pytorch_lightning import ModelCheckpoint
 import pytorch_lightning as pl
+from datetime import datetime
 
 
 # 모델 저장을 위한 class
@@ -17,3 +18,13 @@ class CustomModelCheckpoint(ModelCheckpoint):
             (trainer.current_epoch + 1) % self._every_n_epochs != 0 or torch.isnan(current) or current < 0.6):
             return
         self.save_checkpoint(trainer)
+
+
+def get_time_str():
+    now = datetime.now()
+    return now.strftime('%y-%m-%d-%H:%M')
+
+# set version to save model
+def set_version():
+    for i in range(1, 1000):
+        yield i

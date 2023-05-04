@@ -272,7 +272,7 @@ class EntityVerbalizedDataloader(Dataloader):
             if subj_start > obj_start:
                 ss, os = os, ss
             tmp.append(
-                f"{item[self.text_column][subj_start:subj_end + 1]}는 {item[self.text_column][subj_start:subj_end + 1]}에 대해서 {ENTITY_MAP[subj_entity]} 와 {ENTITY_MAP[obj_entity]} 사이의 관계를 가진다."
+                f" [SEP] {item[self.text_column][subj_start:subj_end + 1]}는 {item[self.text_column][subj_start:subj_end + 1]}에 대해서 {ENTITY_MAP[subj_entity]} 와 {ENTITY_MAP[obj_entity]} 사이의 관계를 가진다."
             )
             text = "".join(tmp)
             outputs = self.tokenizer(text,

@@ -1,6 +1,7 @@
 from pytorch_lightning.callbacks import LearningRateMonitor, EarlyStopping, ModelCheckpoint
 from pytorch_lightning.loggers import WandbLogger
 from utils.seed import * # seed setting module
+from utils.callbacks import *
 from dataloader import *
 from models import *
 import wandb
@@ -110,9 +111,9 @@ def main():
                         mode='max',
                         check_finite=False
                     ),
-                    ModelCheckpoint(
+                    CustomModelCheckpoint(
                         './save/',
-                        f'klue_re_{next(ver):0>4}_{{val_f1:.4f}}',
+                        f'klue_re_{get_time_str()}_{next(ver):0>4}_{{val_f1:.4f}}',
                         monitor='val_f1',
                         save_top_k=1,
                         mode='max'
