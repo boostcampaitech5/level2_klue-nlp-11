@@ -17,7 +17,7 @@ def main():
                 'values': [1e-5, 2e-5, 3e-5, 5e-5]
             },
             'max_epoch': {
-                'values': [5]
+                'values': [6]
             },
             'batch_size': {
                 'values': [16, 24, 32]
@@ -38,11 +38,14 @@ def main():
                 'values': [0, 0.01]
             },
             'loss_func': {
-                'values': ["CE", "CB"]
+                'values': ["CE"]
             },
             # 'LDAM_start': {
             #     'values': [250, 500, 1000]
-            # }
+            # },
+            'lr_scheduler': {
+                'values': ["linear", "inv_sqrt", "cosine_annealing", "constant"]
+            }
         },
         'metric': {
             'name': 'val_f1',
@@ -74,8 +77,10 @@ def main():
                                                     "~/dataset/train/val.csv", "~/dataset/test/test_data.csv")
             warmup_steps = total_steps = None
             if "warm_up_ratio" in config and config.warm_up_ratio:
-                total_steps = (32470 // (12 * 4) + (32470 % (12 * 4) != 0)) * 5
-                warmup_steps = int(config.warm_up_ratio * (32470 // (12 * 4) + (32470 % (12 * 4) != 0)))
+                total_steps = (32470 // (config.batch_size * 2) + (32470 %
+                                                                   (config.batch_size * 2) != 0)) * config.max_epoch
+                warmup_steps = int(config.warm_up_ratio * (32470 // (config.batch_size * 2) +
+                                                           (32470 % (config.batch_size * 2) != 0)))
             model = TypedEntityMarkerPuncModel(
                 config.model_name,                           # model name
                 config.learning_rate,                        # lr
@@ -83,7 +88,8 @@ def main():
                 config.loss_func,                            # loss function
                 warmup_steps,                                # warm up steps
                 total_steps,                                 # total steps
-                # config.LDAM_start
+                # config.LDAM_start,
+                lr_scheduler=config.lr_scheduler
                 ) # yapf: disable
             # gpu가 없으면 accelerator='cpu', 있으면 accelerator='gpu'
             trainer = pl.Trainer(
@@ -97,7 +103,7 @@ def main():
                 max_epochs=config.max_epoch,                           # 최대 epoch 수
                 logger=wandb_logger,                    # wandb logger 사용
                 log_every_n_steps=1,                    # 1 step마다 로그 기록
-                val_check_interval=0.25,                # 0.25 epoch마다 validation
+                val_check_interval=0.5,                # 0.25 epoch마다 validation
                 callbacks=[
                     # learning rate를 매 step마다 기록
                     LearningRateMonitor(logging_interval='step'),
@@ -121,14 +127,14 @@ def main():
 
     # Sweep 생성
     sweep_id = wandb.sweep(
-        sweep=sweep_config,              # config 딕셔너리 추가,
-        entity="line1029-academic-team", # 팀 이름
-        project="klue-re-sweep-001"      # project의 이름 추가
+        sweep=sweep_config,         # config 딕셔너리 추가,
+        entity="line1029",          # 팀 이름
+        project="klue-re-sweep-002" # project의 이름 추가
     )
     wandb.agent(
-        sweep_id=sweep_id,               # sweep의 정보를 입력
-        function=sweep_train,            # train이라는 모델을 학습하는 코드를
-        count=80                         # 총 n회 실행
+        sweep_id=sweep_id,          # sweep의 정보를 입력
+        function=sweep_train,       # train이라는 모델을 학습하는 코드를
+        count=80                    # 총 n회 실행
     )
 
 

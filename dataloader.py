@@ -6,7 +6,7 @@ import torch
 
 import pytorch_lightning as pl
 
-ENTITY_MAP = {"PER": "사람", "ORG": "조직", "LOC": "장소", "POH": "기타", "DAT": "날짜", "NOH": "수량"}
+ENTITY_MAP = {"ORG": "단체", "PER": "사람", "DAT": "날짜", "LOC": "위치", "POH": "기타", "NOH": "수량"}
 
 
 class Dataset(torch.utils.data.Dataset):
@@ -271,11 +271,13 @@ class EntityVerbalizedDataloader(Dataloader):
                 self.tokenizer(tmp[2], add_special_tokens=False)['input_ids'])
             if subj_start > obj_start:
                 ss, os = os, ss
-            tmp.append(
-                f" [SEP] {item[self.text_column][subj_start:subj_end + 1]}는 {item[self.text_column][subj_start:subj_end + 1]}에 대해서 {ENTITY_MAP[subj_entity]} 와 {ENTITY_MAP[obj_entity]} 사이의 관계를 가진다."
-            )
+            text_entity_verbalized = f'@{item[self.text_column][obj_start:obj_end + 1]}@는 *{ENTITY_MAP[subj_entity]}*인 #{item[self.text_column][subj_start:subj_end + 1]}#의 ^{ENTITY_MAP[obj_entity]}^이다.'
+            offset = len(self.tokenizer(text_entity_verbalized, add_special_tokens=False)["input_ids"]) + 1
+            ss += offset
+            os += offset
             text = "".join(tmp)
-            outputs = self.tokenizer(text,
+            outputs = self.tokenizer(text_entity_verbalized,
+                                     text,
                                      add_special_tokens=True,
                                      max_length=256,
                                      padding='max_length',

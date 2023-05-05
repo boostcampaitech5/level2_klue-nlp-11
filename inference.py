@@ -18,8 +18,9 @@ def num_to_label(label):
 
 def main(path):
     # wandb_logger = WandbLogger(project="klue-re")
-    dataloader = Dataloader('klue/roberta-large', False, 32, 32, True, "~/dataset/train/val.csv",
-                            "~/dataset/train/val.csv", "~/dataset/train/val.csv", "~/dataset/test/test_data.csv")
+    dataloader = EntityVerbalizedDataloader('klue/roberta-large', False, 12, 12, True, "~/dataset/train/val.csv",
+                                            "~/dataset/train/val.csv", "~/dataset/train/val.csv",
+                                            "~/dataset/test/test_data.csv")
 
     model = TypedEntityMarkerPuncModel.load_from_checkpoint("./save/" + path)
 
@@ -44,6 +45,10 @@ def main(path):
 
 
 if __name__ == "__main__":
-    save_path = ['klue_re_23-05-04-12:54_0001_val_f1=88.4855.ckpt']
+    save_path = [
+        'klue_re_23-05-05-06-39_0001_val_f1=70.7466.ckpt', 'klue_re_23-05-05-09-37_0002_val_f1=72.5724.ckpt',
+        'klue_re_23-05-05-12-06_0004_val_f1=71.5972.ckpt', 'klue_re_23-05-05-08-08_0001_val_f1=70.1744.ckpt',
+        'klue_re_23-05-05-10-51_0003_val_f1=70.8187.ckpt'
+    ]
     for path in save_path:
         main(path)
