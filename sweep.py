@@ -14,7 +14,7 @@ def main():
         'method': 'random',                        # random: 임의의 값의 parameter 세트를 선택
         'parameters': {
             'learning_rate': {
-                'values': [1e-5, 2e-5, 3e-5, 5e-5]
+                'values': [2e-5]
             },
             'max_epoch': {
                 'values': [6]
@@ -44,7 +44,7 @@ def main():
             #     'values': [250, 500, 1000]
             # },
             'lr_scheduler': {
-                'values': ["linear", "inv_sqrt", "cosine_annealing", "constant"]
+                'values': ["cosine_annealing"]
             }
         },
         'metric': {
@@ -75,8 +75,8 @@ def main():
             dataloader = EntityVerbalizedDataloader(config.model_name, False, config.batch_size, config.batch_size,
                                                     True, "~/dataset/train/train_split.csv", "~/dataset/train/val.csv",
                                                     "~/dataset/train/val.csv", "~/dataset/test/test_data.csv")
-            warmup_steps = total_steps = None
-            if "warm_up_ratio" in config and config.warm_up_ratio:
+            warmup_steps = total_steps = 0.
+            if "warm_up_ratio" in config:
                 total_steps = (32470 // (config.batch_size * 2) + (32470 %
                                                                    (config.batch_size * 2) != 0)) * config.max_epoch
                 warmup_steps = int(config.warm_up_ratio * (32470 // (config.batch_size * 2) +
@@ -103,7 +103,7 @@ def main():
                 max_epochs=config.max_epoch,                           # 최대 epoch 수
                 logger=wandb_logger,                    # wandb logger 사용
                 log_every_n_steps=1,                    # 1 step마다 로그 기록
-                val_check_interval=0.5,                # 0.25 epoch마다 validation
+                val_check_interval=0.25,                # 0.25 epoch마다 validation
                 callbacks=[
                     # learning rate를 매 step마다 기록
                     LearningRateMonitor(logging_interval='step'),
@@ -122,19 +122,18 @@ def main():
                     )
                 ]
             ) # yapf: disable
-            trainer.fit(model=model, datamodule=dataloader)  # 모델 학습
-            trainer.test(model=model, datamodule=dataloader) # 모델 평가
+            trainer.fit(model=model, datamodule=dataloader) # 모델 학습
 
     # Sweep 생성
     sweep_id = wandb.sweep(
-        sweep=sweep_config,         # config 딕셔너리 추가,
-        entity="line1029",          # 팀 이름
-        project="klue-re-sweep-002" # project의 이름 추가
+        sweep=sweep_config,              # config 딕셔너리 추가,
+        entity="line1029-academic-team", # 팀 이름
+        project="klue-re-sweep-003"      # project의 이름 추가
     )
     wandb.agent(
-        sweep_id=sweep_id,          # sweep의 정보를 입력
-        function=sweep_train,       # train이라는 모델을 학습하는 코드를
-        count=80                    # 총 n회 실행
+        sweep_id=sweep_id,               # sweep의 정보를 입력
+        function=sweep_train,            # train이라는 모델을 학습하는 코드를
+        count=80                         # 총 n회 실행
     )
 
 

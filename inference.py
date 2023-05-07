@@ -41,14 +41,16 @@ def main(path):
     output = pd.read_csv("~/dataset/sample_submission.csv")
     output["pred_label"] = predictions
     output["probs"] = predictions_prob
-    output.to_csv(f"output-{path[:-5]}.csv", index=False)
+    output.to_csv(f"{path[:-5]}.csv", index=False)
 
 
 if __name__ == "__main__":
     save_path = [
-        'klue_re_23-05-05-06-39_0001_val_f1=70.7466.ckpt', 'klue_re_23-05-05-09-37_0002_val_f1=72.5724.ckpt',
-        'klue_re_23-05-05-12-06_0004_val_f1=71.5972.ckpt', 'klue_re_23-05-05-08-08_0001_val_f1=70.1744.ckpt',
-        'klue_re_23-05-05-10-51_0003_val_f1=70.8187.ckpt'
+        'klue_re_23-05-07-03-31_0011_val_f1=88.3111.ckpt', 'klue_re_23-05-06-20-06_0003_val_f1=88.2921.ckpt',
+        'klue_re_23-05-06-23-05_0006_val_f1=87.7206.ckpt', 'klue_re_23-05-07-01-36_0009_val_f1=88.9049.ckpt',
+        'klue_re_23-05-06-21-15_0004_val_f1=88.1875.ckpt', 'klue_re_23-05-06-23-45_0007_val_f1=88.5520.ckpt',
+        'klue_re_23-05-07-02-32_0010_val_f1=87.9266.ckpt', 'klue_re_23-05-06-22-09_0005_val_f1=88.0122.ckpt',
+        'klue_re_23-05-07-00-44_0008_val_f1=87.6694.ckpt'
     ]
     for path in save_path:
         main(path)

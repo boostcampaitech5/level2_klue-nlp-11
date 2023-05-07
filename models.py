@@ -12,6 +12,7 @@ from utils.losses import *
 from utils.metrics import *
 from utils.callbacks import *
 import torch.nn.functional as F
+import wandb
 
 
 class FullyConnectedLayer(nn.Module):
@@ -237,14 +238,14 @@ class TypedEntityMarkerPuncModel(BaseModel):
     ):
         super().__init__(model_name, lr, weight_decay, loss_func, warmup_steps, total_steps, LDAM_start, lr_scheduler)
         self.save_hyperparameters()
-
+        self.maximum_f1 = 0.0
         self.classifier = nn.Sequential(
-            nn.Dropout(p=0.3),
+            nn.Dropout(p=0.2),
             nn.Linear(self.config.hidden_size * 3, self.config.hidden_size * 2),
-            nn.Tanh(),
-            nn.Dropout(p=0.3),
+            nn.GELU(),
+            nn.Dropout(p=0.2),
             nn.Linear(self.config.hidden_size * 2, self.config.hidden_size),
-            nn.Tanh(),
+            nn.GELU(),
             nn.Linear(self.config.hidden_size, 30)
         ) # yapf: disable
 
@@ -278,12 +279,13 @@ class TypedEntityMarkerPuncModel(BaseModel):
         return loss
 
     def validation_step(self, batch, batch_idx):
+        if self.trainer.global_step == 0:
+            wandb.define_metric('val_f1', summary='max')
         x, y, ss, os = batch
         logits = self(x, ss=ss, os=os)
         loss = self.loss_func(logits, y)
         preds = logits.argmax(-1)
         self.log("val_loss", loss)
-
         self.log("val_f1", klue_re_micro_f1(preds, y) * 100)
         # self.log("val_auprc", klue_re_auprc(logits, y) * 100)
         # self.log("val_acc", klue_re_acc(preds, y) * 100)

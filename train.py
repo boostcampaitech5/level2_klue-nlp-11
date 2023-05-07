@@ -4,6 +4,7 @@ from utils.seed import * # seed setting module
 from utils.callbacks import *
 from dataloader import *
 from models import *
+from config.config import config
 
 
 def main():
@@ -11,21 +12,26 @@ def main():
     seed = get_seed()
     set_seed(*seed)
 
-    wandb_logger = WandbLogger(project="klue-re-001", name=f"seed:{'_'.join(map(str, seed))}")
-    dataloader = EntityVerbalizedDataloader('klue/roberta-large', False, 32, 32, True,
+    wandb_logger = WandbLogger(entity="line1029", project="klue-re-sweep-003", name=f"seed:{'_'.join(map(str, seed))}")
+    dataloader = EntityVerbalizedDataloader(config.model_name, False, config.batch_size, config.batch_size, True,
                                             "~/dataset/train/train_split.csv", "~/dataset/train/val.csv",
                                             "~/dataset/train/val.csv", "~/dataset/test/test_data.csv")
 
-    total_steps = (32470 // (12 * 4) + (32470 % (12 * 4) != 0)) * 5
-    warmup_steps = int(0.1 * (32470 // (12 * 4) + (32470 % (12 * 4) != 0)))
+    warmup_steps = total_steps = 0.
+    if "warm_up_ratio" in config._asdict().keys():
+        total_steps = (32470 // (config.batch_size * 2) + (32470 % (config.batch_size * 2) != 0)) * config.max_epoch
+        warmup_steps = int(config.warm_up_ratio * (32470 // (config.batch_size * 2) + (32470 %
+                                                                                       (config.batch_size * 2) != 0)))
     model = TypedEntityMarkerPuncModel(
-        'klue/roberta-large',           # model name
-        3e-5,                           # lr
-        0.01,                           # weight decay
-        "CE",                           # loss function
-        warmup_steps,                   # warm up steps
-        total_steps                     # total steps
-    )
+        config.model_name,                           # model name
+        config.learning_rate,                        # lr
+        config.weight_decay,                         # weight decay
+        config.loss_func,                            # loss function
+        warmup_steps,                                # warm up steps
+        total_steps,                                 # total steps
+        # config.LDAM_start,
+        lr_scheduler=config.lr_scheduler
+        ) # yapf: disable
 
     ver = set_version()
 
@@ -36,11 +42,11 @@ def main():
         gpus = 1,
         accelerator='gpu',                      # GPU 사용
         # reload_dataloaders_every_n_epochs=1,  # dataloader를 매 epoch마다 reload해서 resampling
-        accumulate_grad_batches=4,              # 4step만큼 합친 후 역전파
-        max_epochs=5,                           # 최대 epoch 수
+        accumulate_grad_batches=2,              # 4step만큼 합친 후 역전파
+        max_epochs=config.max_epoch,                           # 최대 epoch 수
         logger=wandb_logger,                    # wandb logger 사용
         log_every_n_steps=1,                    # 1 step마다 로그 기록
-        val_check_interval=0.5,                 # 0.25 epoch마다 validation
+        val_check_interval=0.25,                 # 0.25 epoch마다 validation
         callbacks=[
 
             LearningRateMonitor(logging_interval='step'), # learning rate를 매 step마다 기록
@@ -62,7 +68,6 @@ def main():
 
     # Train part
     trainer.fit(model=model, datamodule=dataloader)
-    trainer.test(model=model, datamodule=dataloader)
 
 
 if __name__ == "__main__":
