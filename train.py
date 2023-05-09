@@ -5,6 +5,8 @@ from utils.callbacks import *
 from dataloader import *
 from models import *
 from config.config import config
+import pandas as pd
+import os
 
 
 def main():
@@ -13,16 +15,18 @@ def main():
     set_seed(*seed)
 
     wandb_logger = WandbLogger(entity="line1029-academic-team",
-                               project="train-val-experiment",
+                               project="train-val-experiment-001",
                                name=f"train_val_method_a_seed:{'_'.join(map(str, seed))}")
     dataloader = EntityVerbalizedDataloader(config.model_name, False, config.batch_size, config.batch_size, True,
                                             config.train_path, config.dev_path, config.test_path, config.predict_path)
 
     warmup_steps = total_steps = 0.
     if "warm_up_ratio" in config._asdict().keys():
-        total_steps = (32470 // (config.batch_size * 2) + (32470 % (config.batch_size * 2) != 0)) * config.max_epoch
-        warmup_steps = int(config.warm_up_ratio * (32470 // (config.batch_size * 2) + (32470 %
-                                                                                       (config.batch_size * 2) != 0)))
+        num_samples = pd.read_csv(config.train_path).shape[0]
+        total_steps = (num_samples // (config.batch_size * 2) + (num_samples %
+                                                                 (config.batch_size * 2) != 0)) * config.max_epoch
+        warmup_steps = int(config.warm_up_ratio * (num_samples // (config.batch_size * 2) +
+                                                   (num_samples % (config.batch_size * 2) != 0)))
     model = TypedEntityMarkerPuncModel(
         config.model_name,                           # model name
         config.learning_rate,                        # lr
@@ -35,6 +39,7 @@ def main():
         ) # yapf: disable
 
     ver = set_version()
+    model_path = f"train_val_method_a_{get_time_str()}_{next(ver):0>4}"
 
     # gpu가 없으면 accelerator='cpu', 있으면 accelerator='gpu'
     trainer = pl.Trainer(
@@ -59,7 +64,7 @@ def main():
             ),
             CustomModelCheckpoint(
                 './save/',
-                f'klue_re_{get_time_str()}_{next(ver):0>4}_{{val_f1:.4f}}',
+                model_path + '_{val_f1:.4f}',
                 monitor='val_f1',
                 save_top_k=1,
                 mode='max'
@@ -68,8 +73,16 @@ def main():
     ) # yapf: disable
 
     # Train part
-    trainer.fit(model=model, datamodule=dataloader)
+    # trainer.fit(model=model, datamodule=dataloader)
+    path_dir = '/opt/ml/level2_klue-nlp-11/save'
+    file_list = os.listdir(path_dir)
+    for file in file_list:
+        if file.startswith(model_path):
+            path = os.path.join(path_dir, file)
+    trainer.test(model=TypedEntityMarkerPuncModel.load_from_checkpoint(path), datamodule=dataloader)
+    wandb.finish()
 
 
 if __name__ == "__main__":
-    main()
+    for _ in range(3):
+        main()
