@@ -73,13 +73,14 @@ def main():
     ) # yapf: disable
 
     # Train part
-    # trainer.fit(model=model, datamodule=dataloader)
+    trainer.fit(model=model, datamodule=dataloader)
     path_dir = '/opt/ml/level2_klue-nlp-11/save'
     file_list = os.listdir(path_dir)
     for file in file_list:
         if file.startswith(model_path):
             path = os.path.join(path_dir, file)
-    trainer.test(model=TypedEntityMarkerPuncModel.load_from_checkpoint(path), datamodule=dataloader)
+            trainer.test(model=TypedEntityMarkerPuncModel.load_from_checkpoint(path), datamodule=dataloader)
+            break
     wandb.finish()
 
 
