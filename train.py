@@ -77,9 +77,12 @@ def main():
     path_dir = '/opt/ml/level2_klue-nlp-11/save'
     file_list = os.listdir(path_dir)
     for file in file_list:
-        if file.startswith(model_path):
+        if file.startswith(model_path) and file.endswith(".ckpt"):
             path = os.path.join(path_dir, file)
-            trainer.test(model=TypedEntityMarkerPuncModel.load_from_checkpoint(path), datamodule=dataloader)
+            model = TypedEntityMarkerPuncModel.load_from_checkpoint(path)
+            save_path = os.path.expanduser(path[:-4] + "pt")
+            torch.save(model, save_path)
+            trainer.test(model=model, datamodule=dataloader)
             break
     wandb.finish()
 

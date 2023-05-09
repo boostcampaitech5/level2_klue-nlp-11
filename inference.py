@@ -16,20 +16,21 @@ def num_to_label(label):
     return origin_label
 
 
-def main(path):
+def main(path: str):
     # wandb_logger = WandbLogger(project="klue-re")
-    dataloader = EntityVerbalizedDataloader('klue/roberta-large', False, 12, 12, True, "~/dataset/train/val.csv",
-                                            "~/dataset/train/val.csv", "~/dataset/train/val.csv",
+    dataloader = EntityVerbalizedDataloader('klue/roberta-large', False, 12, 12, True, "~/dataset/train/dummy.csv",
+                                            "~/dataset/train/dummy.csv", "~/dataset/train/dummy.csv",
                                             "~/dataset/test/test_data.csv")
-
-    model = TypedEntityMarkerPuncModel.load_from_checkpoint("./save/" + path)
+    if path.endswith(".ckpt"):
+        model = TypedEntityMarkerPuncModel.load_from_checkpoint("./save/" + path)
+    elif path.endswith(".pt"):
+        model = torch.load("./save/" + path)
 
     # gpu가 없으면 accelerator='cpu', 있으면 accelerator='gpu'
     trainer = pl.Trainer(
         gpus = 1,
         accelerator='gpu'
     ) # yapf: disable
-
 
     # trainer.test(model=model, datamodule=dataloader)
     predictions_prob = torch.cat(trainer.predict(model=model, datamodule=dataloader))
@@ -46,20 +47,7 @@ def main(path):
 
 if __name__ == "__main__":
     save_path = [
-                                                           # 'klue_re_23-05-07-12-47_0021_val_f1=88.7511.ckpt',
-                                                           # 'klue_re_23-05-07-17-33_0026_val_f1=88.8911.ckpt',
-                                                           # 'klue_re_23-05-07-22-18_0031_val_f1=87.7723.ckpt',
-                                                           # 'klue_re_23-05-07-13-56_0022_val_f1=88.5217.ckpt',
-        'klue_re_23-05-07-18-32_0027_val_f1=87.5601.ckpt',
-        'klue_re_23-05-07-23-00_0032_val_f1=88.1676.ckpt',
-        'klue_re_23-05-07-14-52_0023_val_f1=87.8127.ckpt',
-        'klue_re_23-05-07-19-15_0028_val_f1=88.5585.ckpt',
-        'klue_re_23-05-07-23-55_0033_val_f1=88.7061.ckpt',
-        'klue_re_23-05-07-15-42_0024_val_f1=88.3356.ckpt',
-        'klue_re_23-05-07-20-15_0029_val_f1=88.5262.ckpt',
-        'klue_re_23-05-08-00-52_0034_val_f1=88.6500.ckpt',
-        'klue_re_23-05-07-16-38_0025_val_f1=87.9711.ckpt',
-        'klue_re_23-05-07-21-14_0030_val_f1=87.8359.ckpt',
+        'klue_re_23-05-09-14-29_0004_val_f1=85.8638.ckpt',
     ]
     for path in save_path:
         main(path)

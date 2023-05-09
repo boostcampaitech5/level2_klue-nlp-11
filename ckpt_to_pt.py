@@ -4,8 +4,8 @@ import os
 
 if __name__ == "__main__":
     candidates_paths = [
-        'klue_re_23-05-06-23-05_0006_val_f1=87.7206.ckpt', 'klue_re_23-05-06-16-59_0004_val_f1=88.8362.ckpt',
-        'klue_re_23-05-06-21-15_0004_val_f1=88.1875.ckpt'
+        'klue_re_23-05-07-06-29_0014_val_f1=88.2252.ckpt',
+        'klue_re_23-05-07-17-33_0026_val_f1=88.8911.ckpt',
     ]
 
     for path in candidates_paths:
