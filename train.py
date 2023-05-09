@@ -12,10 +12,11 @@ def main():
     seed = get_seed()
     set_seed(*seed)
 
-    wandb_logger = WandbLogger(entity="line1029", project="klue-re-sweep-003", name=f"seed:{'_'.join(map(str, seed))}")
+    wandb_logger = WandbLogger(entity="line1029-academic-team",
+                               project="train-val-experiment",
+                               name=f"train_val_method_a_seed:{'_'.join(map(str, seed))}")
     dataloader = EntityVerbalizedDataloader(config.model_name, False, config.batch_size, config.batch_size, True,
-                                            "~/dataset/train/train_split.csv", "~/dataset/train/val.csv",
-                                            "~/dataset/train/val.csv", "~/dataset/test/test_data.csv")
+                                            config.train_path, config.dev_path, config.test_path, config.predict_path)
 
     warmup_steps = total_steps = 0.
     if "warm_up_ratio" in config._asdict().keys():
