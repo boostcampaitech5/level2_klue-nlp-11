@@ -47,21 +47,11 @@ def main(path: str):
 
 if __name__ == "__main__":
     save_path = [
-        'no_symbol_query_23-05-09-20-40_0008_val_f1=83.9765.pt',
-        'no_symbol_query_23-05-09-16-49_0001_val_f1=85.5337.pt',
-        'no_symbol_query_23-05-09-21-11_0009_val_f1=85.0460.pt',
-        'no_symbol_query_23-05-09-17-20_0002_val_f1=85.9626.pt',
-        'no_symbol_query_23-05-09-21-41_0010_val_f1=85.2004.pt',
-        'no_symbol_query_23-05-09-17-51_0003_val_f1=85.8523.pt',
-        'no_symbol_query_23-05-09-22-12_0011_val_f1=85.8519.pt',
-        'no_symbol_query_23-05-09-18-23_0004_val_f1=85.9604.pt',
-        'no_symbol_query_23-05-09-22-44_0012_val_f1=86.6466.pt',
-        'no_symbol_query_23-05-09-18-58_0005_val_f1=85.0558.pt',
-        'no_symbol_query_23-05-09-23-15_0013_val_f1=85.8766.pt',
-        'no_symbol_query_23-05-09-19-32_0006_val_f1=85.1301.pt',
-        'no_symbol_query_23-05-09-23-46_0014_val_f1=84.9482.pt',
-        'no_symbol_query_23-05-09-20-08_0007_val_f1=84.8096.pt',
-        'no_symbol_query_23-05-10-00-16_0015_val_f1=85.4417.pt',
+        'no_symbol_query_23-05-10-01-44_0001_val_f1=85.3087.pt',
+        'no_symbol_query_23-05-10-04-21_0004_val_f1=85.5981.pt',
+        'no_symbol_query_23-05-10-02-33_0002_val_f1=86.0387.pt',
+        'no_symbol_query_23-05-10-05-07_0005_val_f1=85.6379.pt',
+        'no_symbol_query_23-05-10-03-32_0003_val_f1=85.6158.pt', 'no_symbol_query_23-05-10-06-14_0006_val_f1=86.5456.pt'
     ]
     for path in save_path:
         main(path)

@@ -18,7 +18,7 @@ def main():
                 'values': [1e-5, 2e-5, 3e-5]
             },
             'max_epoch': {
-                'values': [3]
+                'values': [6]
             },
             'batch_size': {
                 'values': [16, 24, 32]
@@ -33,7 +33,7 @@ def main():
                 ]
             },
             'warm_up_ratio': {
-                'values': [0, 0.1, 0.3]
+                'values': [0, 0.1, 0.3, 0.6]
             },
             'weight_decay': {
                 'values': [0, 0.01]
@@ -72,7 +72,7 @@ def main():
             set_seed(*seed)
             run.name = f"seed:{'_'.join(map(str,seed))}"
 
-            wandb_logger = WandbLogger(project="no_symbol_query-001")
+            wandb_logger = WandbLogger(project="symbol_query-001")
             dataloader = EntityVerbalizedDataloader(config.model_name, False, config.batch_size, config.batch_size,
                                                     True, "~/dataset/train/train_final.csv",
                                                     "~/dataset/train/val_final.csv", "~/dataset/train/dummy.csv",
@@ -95,7 +95,7 @@ def main():
                 lr_scheduler=config.lr_scheduler
                 ) # yapf: disable
 
-            model_path = f"no_symbol_query_{get_time_str()}_{next(ver):0>4}"
+            model_path = f"symbol_corrected_query_{get_time_str()}_{next(ver):0>4}"
 
             # gpu가 없으면 accelerator='cpu', 있으면 accelerator='gpu'
             trainer = pl.Trainer(
@@ -147,7 +147,7 @@ def main():
     sweep_id = wandb.sweep(
         sweep=sweep_config,              # config 딕셔너리 추가,
         entity="line1029-academic-team", # 팀 이름
-        project="no_symbol_query-001"    # project의 이름 추가
+        project="symbol_query-001"       # project의 이름 추가
     )
     wandb.agent(
         sweep_id=sweep_id,               # sweep의 정보를 입력
