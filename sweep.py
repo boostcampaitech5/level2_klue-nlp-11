@@ -18,7 +18,7 @@ def main():
                 'values': [1e-5, 2e-5, 3e-5]
             },
             'max_epoch': {
-                'values': [6]
+                'values': [3]
             },
             'batch_size': {
                 'values': [16, 24, 32]
