@@ -253,7 +253,7 @@ class EntityVerbalizedDataloader(Dataloader):
                 if subj_start < obj_start:
                     tmp.extend([
                         item[self.text_column][:subj_start],
-                        f'@ * {ENTITY_MAP[subj_entity]} * ' + item[self.text_column][subj_start:subj_end + 1] + ' @',
+                        f'@ ⊙ {ENTITY_MAP[subj_entity]} ⊙ ' + item[self.text_column][subj_start:subj_end + 1] + ' @',
                         item[self.text_column][subj_end + 1:obj_start], f'# ^ {ENTITY_MAP[obj_entity]} ^ ',
                         item[self.text_column][obj_start:obj_end + 1], ' #', item[self.text_column][obj_end + 1:]
                     ])
@@ -261,7 +261,7 @@ class EntityVerbalizedDataloader(Dataloader):
                     tmp.extend([
                         item[self.text_column][:obj_start],
                         f'# ^ {ENTITY_MAP[obj_entity]} ^ ' + item[self.text_column][obj_start:obj_end + 1] + ' #',
-                        item[self.text_column][obj_end + 1:subj_start], f'@ * {ENTITY_MAP[subj_entity]} * ',
+                        item[self.text_column][obj_end + 1:subj_start], f'@ ⊙ {ENTITY_MAP[subj_entity]} ⊙ ',
                         item[self.text_column][subj_start:subj_end + 1], ' @', item[self.text_column][subj_end + 1:]
                     ])
                 else:
@@ -271,7 +271,7 @@ class EntityVerbalizedDataloader(Dataloader):
                 self.tokenizer(tmp[2], add_special_tokens=False)['input_ids'])
             if subj_start > obj_start:
                 ss, os = os, ss
-            text_entity_verbalized = f'{item[self.text_column][obj_start:obj_end + 1]} 는 {ENTITY_MAP[subj_entity]} 인 {item[self.text_column][subj_start:subj_end + 1]} 의 {ENTITY_MAP[obj_entity]} 이다.'
+            text_entity_verbalized = f'#{item[self.text_column][obj_start:obj_end + 1]}#는 ⊙{ENTITY_MAP[subj_entity]}⊙인 @{item[self.text_column][subj_start:subj_end + 1]}@의 ^{ENTITY_MAP[obj_entity]}^이다.'
             offset = len(self.tokenizer(text_entity_verbalized, add_special_tokens=False)["input_ids"]) + 1
             ss += offset
             os += offset

@@ -18,7 +18,7 @@ def num_to_label(label):
 
 def main(path: str):
     # wandb_logger = WandbLogger(project="klue-re")
-    dataloader = EntityVerbalizedDataloader('klue/roberta-large', False, 12, 12, True, "~/dataset/train/dummy.csv",
+    dataloader = EntityVerbalizedDataloader('klue/roberta-large', False, 32, 32, True, "~/dataset/train/dummy.csv",
                                             "~/dataset/train/dummy.csv", "~/dataset/train/dummy.csv",
                                             "~/dataset/test/test_data.csv")
     if path.endswith(".ckpt"):
@@ -47,7 +47,11 @@ def main(path: str):
 
 if __name__ == "__main__":
     save_path = [
-        'klue_re_23-05-09-14-29_0004_val_f1=85.8638.ckpt',
+        'no_symbol_query_23-05-10-01-44_0001_val_f1=85.3087.pt',
+        'no_symbol_query_23-05-10-04-21_0004_val_f1=85.5981.pt',
+        'no_symbol_query_23-05-10-02-33_0002_val_f1=86.0387.pt',
+        'no_symbol_query_23-05-10-05-07_0005_val_f1=85.6379.pt',
+        'no_symbol_query_23-05-10-03-32_0003_val_f1=85.6158.pt', 'no_symbol_query_23-05-10-06-14_0006_val_f1=86.5456.pt'
     ]
     for path in save_path:
         main(path)
