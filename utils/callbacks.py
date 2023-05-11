@@ -31,7 +31,7 @@ def get_time_str():
 
 # set version to save model
 def set_version():
-    for i in range(1, 1000):
+    for i in range(1000):
         yield i
 
 

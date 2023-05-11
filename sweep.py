@@ -72,10 +72,10 @@ def main(is_random, experiment_name, experiment_idx):
             if is_random:
                 seed = get_seed()
                 set_seed(seed)
-                run.name = f"seed:{'_'.join(map(str,seed))}"
+                run.name = f"{experiment_name}_seed:{'_'.join(map(str,seed))}"
             else:
                 set_seed(seed_idx, False)
-                run.name = f"seed:{seed_idx}"
+                run.name = f"{experiment_name}_seed:{seed_idx}"
 
             wandb_logger = WandbLogger(project=f"{experiment_name}-{experiment_idx:03}")
             dataloader = EntityVerbalizedDataloader(config.model_name, False, config.batch_size, config.batch_size,
