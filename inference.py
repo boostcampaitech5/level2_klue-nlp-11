@@ -23,8 +23,10 @@ def main(path: str):
                                             "~/dataset/test/test_data.csv")
     if path.endswith(".ckpt"):
         model = TypedEntityMarkerPuncModel.load_from_checkpoint("./save/" + path)
+        end_idx = -5
     elif path.endswith(".pt"):
         model = torch.load("./save/" + path)
+        end_idx = -3
 
     # gpu가 없으면 accelerator='cpu', 있으면 accelerator='gpu'
     trainer = pl.Trainer(
@@ -42,16 +44,16 @@ def main(path: str):
     output = pd.read_csv("~/dataset/sample_submission.csv")
     output["pred_label"] = predictions
     output["probs"] = predictions_prob
-    output.to_csv(f"{path[:-5]}.csv", index=False)
+    output.to_csv(f"{path[:end_idx]}.csv", index=False)
 
 
 if __name__ == "__main__":
     save_path = [
-        'no_symbol_query_23-05-10-01-44_0001_val_f1=85.3087.pt',
-        'no_symbol_query_23-05-10-04-21_0004_val_f1=85.5981.pt',
-        'no_symbol_query_23-05-10-02-33_0002_val_f1=86.0387.pt',
-        'no_symbol_query_23-05-10-05-07_0005_val_f1=85.6379.pt',
-        'no_symbol_query_23-05-10-03-32_0003_val_f1=85.6158.pt', 'no_symbol_query_23-05-10-06-14_0006_val_f1=86.5456.pt'
+        'symbol_query_23-05-10-13-54_0001_val_f1=86.2669.pt',
+        'symbol_query_23-05-10-14-53_0002_val_f1=86.0006.pt',
+        'symbol_query_23-05-10-15-55_0003_val_f1=86.0039.pt',
+        'symbol_query_23-05-10-16-54_0004_val_f1=86.1900.pt',
+        'symbol_query_23-05-10-18-01_0005_val_f1=85.6826.pt',
     ]
     for path in save_path:
         main(path)

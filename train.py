@@ -9,14 +9,19 @@ import pandas as pd
 import os
 
 
-def main():
+def main(seed_idx, is_random, experiment_name, experiment_idx):
     # set seed
-    seed = get_seed()
-    set_seed(*seed)
+    if is_random:
+        seed = get_seed()
+        set_seed(*seed)
+        run_name = f"{experiment_name}_seed:{'_'.join(map(str, seed))}"
+    else:
+        set_seed(seed_idx, is_random)
+        run_name = f"{experiment_name}_seed:{seed_idx}"
 
     wandb_logger = WandbLogger(entity="line1029-academic-team",
-                               project="train-val-experiment-001",
-                               name=f"train_val_method_a_seed:{'_'.join(map(str, seed))}")
+                               project=f"{experiment_name}-{experiment_idx:03}",
+                               name=run_name)
     dataloader = EntityVerbalizedDataloader(config.model_name, False, config.batch_size, config.batch_size, True,
                                             config.train_path, config.dev_path, config.test_path, config.predict_path)
 
@@ -88,5 +93,8 @@ def main():
 
 
 if __name__ == "__main__":
-    for _ in range(3):
-        main()
+    experiment_name = "experiment_name"
+    experiment_idx = 1
+    is_random = False
+    for i in range(3):
+        main(i, is_random, experiment_name, experiment_idx)
