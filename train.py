@@ -57,17 +57,17 @@ def main(seed):
 
             LearningRateMonitor(logging_interval='step'), # learning rate를 매 step마다 기록
             EarlyStopping(                      # validation pearson이 8번 이상 개선되지 않으면 학습을 종료
-                'val_f1',
+                'val_loss',
                 patience=8,
-                mode='max',
+                mode='min',
                 check_finite=False
             ),
             CustomModelCheckpoint(
                 './save/',
                 model_path + '_{val_f1:.4f}',
-                monitor='val_f1',
+                monitor='val_loss',
                 save_top_k=1,
-                mode='max'
+                mode='min'
             )
         ]
     ) # yapf: disable
@@ -85,5 +85,5 @@ def main(seed):
 
 
 if __name__ == "__main__":
-    for i in range(3):
+    for i in range(5):
         main(i)

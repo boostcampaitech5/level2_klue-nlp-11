@@ -183,7 +183,7 @@ class Dataloader(pl.LightningDataModule):
             #query change
             # text_entity_verbalized = f'#{item[self.text_column][obj_start:obj_end + 1]}#는 ⊙{ENTITY_MAP[subj_entity]}⊙인 @{item[self.text_column][subj_start:subj_end + 1]}@의 ^{ENTITY_MAP[obj_entity]}^이다.'
             # text_entity_verbalized = f'#{item[self.text_column][obj_start:obj_end + 1]}#와 @{item[self.text_column][subj_start:subj_end + 1]}@의 관계는 ⊙{ENTITY_MAP[subj_entity]}⊙와 ^{ENTITY_MAP[obj_entity]}^의 관계다.'
-            text_entity_verbalized = f'#{item[self.text_column][obj_start:obj_end + 1]}#와 @{item[self.text_column][subj_start:subj_end + 1]}@의 관계는 ⊙{ENTITY_MAP[subj_entity]}⊙와 ^{ENTITY_MAP[obj_entity]}^의 관계?'
+            text_entity_verbalized = f'{item[self.text_column][obj_start:obj_end + 1]}와 {item[self.text_column][subj_start:subj_end + 1]}의 관계는 {ENTITY_MAP[subj_entity]}와 {ENTITY_MAP[obj_entity]}의 관계'
             
             offset = len(self.tokenizer(text_entity_verbalized, add_special_tokens=False)["input_ids"]) + 1
             ss += offset

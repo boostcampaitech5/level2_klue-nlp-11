@@ -6,7 +6,7 @@ import random
 
 # get random seeds
 def get_seed():
-    return [random.randint(0, 2**32 - 1) for _ in range(6)]
+    return list(range(6))
 
 # set seeds
 def set_seed(a):
