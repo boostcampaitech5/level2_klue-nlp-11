@@ -9,15 +9,15 @@ import pandas as pd
 import os
 
 
-def main():
+def main(seed):
     # set seed
-    seed = get_seed()
-    set_seed(*seed)
+    # seed = get_seed(seed)
+    set_seed(seed)
 
     wandb_logger = WandbLogger(entity="line1029-academic-team",
-                               project="train-val-experiment-001",
-                               name=f"train_val_method_a_seed:{'_'.join(map(str, seed))}")
-    dataloader = EntityVerbalizedDataloader(config.model_name, False, config.batch_size, config.batch_size, True,
+                               project="query-change",
+                               name=f"query-change-question:{seed}")
+    dataloader = Dataloader(config.model_name, False, config.batch_size, config.batch_size, True,
                                             config.train_path, config.dev_path, config.test_path, config.predict_path)
 
     warmup_steps = total_steps = 0.
@@ -39,7 +39,7 @@ def main():
         ) # yapf: disable
 
     ver = set_version()
-    model_path = f"train_val_method_a_{get_time_str()}_{next(ver):0>4}"
+    model_path = f"{get_time_str()}_{next(ver):0>4}"
 
     # gpu가 없으면 accelerator='cpu', 있으면 accelerator='gpu'
     trainer = pl.Trainer(
@@ -85,5 +85,5 @@ def main():
 
 
 if __name__ == "__main__":
-    for _ in range(3):
-        main()
+    for i in range(3):
+        main(i)
