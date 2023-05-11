@@ -14,7 +14,7 @@ def main():
         'method': 'random',                        # random: 임의의 값의 parameter 세트를 선택
         'parameters': {
             'learning_rate': {
-                'values': [2e-5]
+                'values': [1e-5]
             },
             'max_epoch': {
                 'values': [6]
@@ -71,10 +71,10 @@ def main():
             set_seed(*seed)
             run.name = f"seed:{'_'.join(map(str,seed))}"
 
-            wandb_logger = WandbLogger(project="klue-re-sweep")
-            dataloader = EntityVerbalizedDataloader(config.model_name, False, config.batch_size, config.batch_size,
-                                                    True, "~/dataset/train/train_split.csv", "~/dataset/train/val.csv",
-                                                    "~/dataset/train/val.csv", "~/dataset/test/test_data.csv")
+            wandb_logger = WandbLogger(project="query-change-sweep")
+            dataloader = Dataloader(config.model_name, False, config.batch_size, config.batch_size,
+                                                    True, "~/dataset/train/train_final.csv", "~/dataset/train/val_final.csv",
+                                                    "~/dataset/train/val_final.csv", "~/dataset/test/test_data.csv")
             warmup_steps = total_steps = 0.
             if "warm_up_ratio" in config:
                 total_steps = (32470 // (config.batch_size * 2) + (32470 %
@@ -128,7 +128,7 @@ def main():
     sweep_id = wandb.sweep(
         sweep=sweep_config,              # config 딕셔너리 추가,
         entity="line1029-academic-team", # 팀 이름
-        project="klue-re-sweep-003"      # project의 이름 추가
+        project="query-change-sweep-001"      # project의 이름 추가
     )
     wandb.agent(
         sweep_id=sweep_id,               # sweep의 정보를 입력

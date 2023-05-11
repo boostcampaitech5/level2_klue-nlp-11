@@ -18,8 +18,8 @@ def num_to_label(label):
 
 def main(path):
     # wandb_logger = WandbLogger(project="klue-re")
-    dataloader = EntityVerbalizedDataloader('klue/roberta-large', False, 12, 12, True, "~/dataset/train/val.csv",
-                                            "~/dataset/train/val.csv", "~/dataset/train/val.csv",
+    dataloader = Dataloader('/opt/ml/level2_klue-nlp-11/tapt_model', False, 12, 12, True, "~/dataset/train/val_final.csv",
+                                            "~/dataset/train/val_final.csv", "~/dataset/train/val_final.csv",
                                             "~/dataset/test/test_data.csv")
 
     model = TypedEntityMarkerPuncModel.load_from_checkpoint("./save/" + path)
@@ -38,7 +38,7 @@ def main(path):
     predictions_prob = predictions_prob.tolist()
     predictions = num_to_label(predictions_label)
 
-    output = pd.read_csv("~/dataset/sample_submission.csv")
+    output = pd.read_csv("~/dataset/test/test_data.csv")
     output["pred_label"] = predictions
     output["probs"] = predictions_prob
     output.to_csv(f"{path[:-5]}.csv", index=False)
@@ -50,16 +50,7 @@ if __name__ == "__main__":
                                                            # 'klue_re_23-05-07-17-33_0026_val_f1=88.8911.ckpt',
                                                            # 'klue_re_23-05-07-22-18_0031_val_f1=87.7723.ckpt',
                                                            # 'klue_re_23-05-07-13-56_0022_val_f1=88.5217.ckpt',
-        'klue_re_23-05-07-18-32_0027_val_f1=87.5601.ckpt',
-        'klue_re_23-05-07-23-00_0032_val_f1=88.1676.ckpt',
-        'klue_re_23-05-07-14-52_0023_val_f1=87.8127.ckpt',
-        'klue_re_23-05-07-19-15_0028_val_f1=88.5585.ckpt',
-        'klue_re_23-05-07-23-55_0033_val_f1=88.7061.ckpt',
-        'klue_re_23-05-07-15-42_0024_val_f1=88.3356.ckpt',
-        'klue_re_23-05-07-20-15_0029_val_f1=88.5262.ckpt',
-        'klue_re_23-05-08-00-52_0034_val_f1=88.6500.ckpt',
-        'klue_re_23-05-07-16-38_0025_val_f1=87.9711.ckpt',
-        'klue_re_23-05-07-21-14_0030_val_f1=87.8359.ckpt',
+        '23-05-10-16-03_0001_val_f1=85.7794.ckpt'
     ]
     for path in save_path:
         main(path)
