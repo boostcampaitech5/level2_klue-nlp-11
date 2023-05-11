@@ -18,7 +18,7 @@ def main(is_random, experiment_name, experiment_idx):
                 'values': [1e-5]
             },
             'max_epoch': {
-                'values': [6]
+                'values': [12]
             },
             'batch_size': {
                 'values': [16, 24, 32]
@@ -78,7 +78,7 @@ def main(is_random, experiment_name, experiment_idx):
                 run.name = f"{experiment_name}_seed:{seed_idx}"
 
             wandb_logger = WandbLogger(project=f"{experiment_name}-{experiment_idx:03}")
-            dataloader = EntityVerbalizedDataloader(config.model_name, False, config.batch_size, config.batch_size,
+            dataloader = Dataloader(config.model_name, False, config.batch_size, config.batch_size,
                                                     True, "~/dataset/train/train_final.csv",
                                                     "~/dataset/train/val_final.csv", "~/dataset/train/dummy.csv",
                                                     "~/dataset/train/dummy.csv")
@@ -159,7 +159,6 @@ def main(is_random, experiment_name, experiment_idx):
         function=sweep_train,                            # train이라는 모델을 학습하는 코드를
         count=5                                          # 총 n회 실행
     )
-
 
 if __name__ == "__main__":
     is_random = False

@@ -1,7 +1,7 @@
 import pickle as pickle
 from typing import Any
 from transformers import (AutoTokenizer, AutoConfig, AutoModelForSequenceClassification, Trainer, TrainingArguments,
-                          RobertaConfig, RobertaTokenizer, RobertaForSequenceClassification, BertTokenizer, AutoModel,
+                          RobertaConfig, RobertaTokenizer, RobertaForSequenceClassification, AutoModel,
                           RobertaModel)
 import transformers
 import torch
@@ -13,7 +13,6 @@ from utils.metrics import *
 from utils.callbacks import *
 import torch.nn.functional as F
 import wandb
-
 
 class FullyConnectedLayer(nn.Module):
 

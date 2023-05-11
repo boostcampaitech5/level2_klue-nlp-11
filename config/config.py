@@ -20,7 +20,7 @@ parser.add_argument('--project_name', default=None)
 parser.add_argument('--entity', default=None) # wandb team name
 args = parser.parse_args()
 
-with open("./config/config.yaml") as f:
+with open("/opt/ml/level2_klue-nlp-11/config/config.yaml") as f:
     config_dict = yaml.load(f, Loader=yaml.FullLoader)
 
 for key in args.__dict__:

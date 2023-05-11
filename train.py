@@ -22,7 +22,7 @@ def main(seed_idx, is_random, experiment_name, experiment_idx):
     wandb_logger = WandbLogger(entity="line1029-academic-team",
                                project=f"{experiment_name}-{experiment_idx:03}",
                                name=run_name)
-    dataloader = EntityVerbalizedDataloader(config.model_name, False, config.batch_size, config.batch_size, True,
+    dataloader = Dataloader(config.model_name, False, config.batch_size, config.batch_size, True,
                                             config.train_path, config.dev_path, config.test_path, config.predict_path)
 
     warmup_steps = total_steps = 0.
@@ -61,17 +61,17 @@ def main(seed_idx, is_random, experiment_name, experiment_idx):
 
             LearningRateMonitor(logging_interval='step'), # learning rate를 매 step마다 기록
             EarlyStopping(                      # validation pearson이 8번 이상 개선되지 않으면 학습을 종료
-                'val_f1',
+                'val_loss',
                 patience=8,
-                mode='max',
+                mode='min',
                 check_finite=False
             ),
             CustomModelCheckpoint(
                 './save/',
                 model_path + '_{val_f1:.4f}',
-                monitor='val_f1',
+                monitor='val_loss',
                 save_top_k=1,
-                mode='max'
+                mode='min'
             )
         ]
     ) # yapf: disable
@@ -92,7 +92,7 @@ def main(seed_idx, is_random, experiment_name, experiment_idx):
 
 
 if __name__ == "__main__":
-    experiment_name = "experiment_name"
+    experiment_name = "Test"
     experiment_idx = 1
     is_random = False
     for i in range(3):

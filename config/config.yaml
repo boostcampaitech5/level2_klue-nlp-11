@@ -1,6 +1,6 @@
 model_name: klue/roberta-large
-batch_size: 16
-max_epoch: 6
+batch_size: 32
+max_epoch: 12
 lr_scheduler: cosine_annealing
 shuffle: true
 learning_rate: 2e-05
