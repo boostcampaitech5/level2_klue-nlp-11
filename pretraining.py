@@ -9,11 +9,14 @@ from models import *
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
-csv_file_path = "~/dataset/train/train.csv"
-data = pd.read_csv(csv_file_path)
+train_path = "~/dataset/train/train.csv"
+test_path = "~/dataset/test/test_data.csv"
+train_data = pd.read_csv(train_path)
+test_data = pd.read_csv(test_path)
 
 #텍스트 파일 
-text_data = data["sentence"].tolist()
+text_data = train_data["sentence"].tolist() + test_data["sentence"].tolist()
+text_data = list(set(text_data))
 text_data_file = open("text_data.txt", "w", encoding="utf-8")
 text_data_file.write("\n".join(text_data))
 text_data_file.close()
