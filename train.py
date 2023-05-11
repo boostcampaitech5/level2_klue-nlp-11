@@ -43,8 +43,7 @@ def main(seed_idx, is_random, experiment_name, experiment_idx):
         lr_scheduler=config.lr_scheduler
         ) # yapf: disable
 
-    ver = set_version()
-    model_path = f"train_val_method_a_{get_time_str()}_{next(ver):0>4}"
+    model_path = f"{experiment_name}_{get_time_str()}_{seed_idx:0>4}"
 
     # gpu가 없으면 accelerator='cpu', 있으면 accelerator='gpu'
     trainer = pl.Trainer(
