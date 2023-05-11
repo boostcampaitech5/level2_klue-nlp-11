@@ -8,14 +8,14 @@ import wandb
 import os
 
 
-def main():
+def main(is_random, experiment_name, experiment_idx):
     # HP Tuning
     # Sweep을 통해 실행될 학습 코드 작성
     sweep_config = {
         'method': 'random',                        # random: 임의의 값의 parameter 세트를 선택
         'parameters': {
             'learning_rate': {
-                'values': [1e-5, 2e-5, 3e-5]
+                'values': [1e-5]
             },
             'max_epoch': {
                 'values': [6]
@@ -67,12 +67,17 @@ def main():
 
         with wandb.init(config=config) as run:
             config = wandb.config
+            seed_idx = next(ver)
             # set seed
-            seed = get_seed()
-            set_seed(*seed)
-            run.name = f"seed:{'_'.join(map(str,seed))}"
+            if is_random:
+                seed = get_seed()
+                set_seed(seed)
+                run.name = f"seed:{'_'.join(map(str,seed))}"
+            else:
+                set_seed(seed_idx, False)
+                run.name = f"seed:{seed_idx}"
 
-            wandb_logger = WandbLogger(project="symbol_query-001")
+            wandb_logger = WandbLogger(project=f"{experiment_name}-{experiment_idx:03}")
             dataloader = EntityVerbalizedDataloader(config.model_name, False, config.batch_size, config.batch_size,
                                                     True, "~/dataset/train/train_final.csv",
                                                     "~/dataset/train/val_final.csv", "~/dataset/train/dummy.csv",
@@ -95,7 +100,7 @@ def main():
                 lr_scheduler=config.lr_scheduler
                 ) # yapf: disable
 
-            model_path = f"symbol_corrected_query_{get_time_str()}_{next(ver):0>4}"
+            model_path = f"{experiment_name}_{get_time_str()}_{seed_idx:0>4}"
 
             # gpu가 없으면 accelerator='cpu', 있으면 accelerator='gpu'
             trainer = pl.Trainer(
@@ -145,16 +150,19 @@ def main():
 
     # Sweep 생성
     sweep_id = wandb.sweep(
-        sweep=sweep_config,              # config 딕셔너리 추가,
-        entity="line1029-academic-team", # 팀 이름
-        project="symbol_query-001"       # project의 이름 추가
+        sweep=sweep_config,                              # config 딕셔너리 추가,
+        entity="line1029-academic-team",                 # 팀 이름
+        project=f"{experiment_name}-{experiment_idx:03}" # project의 이름 추가
     )
     wandb.agent(
-        sweep_id=sweep_id,               # sweep의 정보를 입력
-        function=sweep_train,            # train이라는 모델을 학습하는 코드를
-        count=80                         # 총 n회 실행
+        sweep_id=sweep_id,                               # sweep의 정보를 입력
+        function=sweep_train,                            # train이라는 모델을 학습하는 코드를
+        count=5                                          # 총 n회 실행
     )
 
 
 if __name__ == "__main__":
-    main()
+    is_random = False
+    experiment_name = "experiment_name"
+    experiment_idx = 1
+    main(is_random, experiment_name, experiment_idx)
