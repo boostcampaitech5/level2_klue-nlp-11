@@ -9,14 +9,19 @@ import pandas as pd
 import os
 
 
-def main(seed):
+def main(seed_idx, is_random, experiment_name, experiment_idx):
     # set seed
-    # seed = get_seed(seed)
-    set_seed(seed)
+    if is_random:
+        seed = get_seed()
+        set_seed(*seed)
+        run_name = f"{experiment_name}_seed:{'_'.join(map(str, seed))}"
+    else:
+        set_seed(seed_idx, is_random)
+        run_name = f"{experiment_name}_seed:{seed_idx}"
 
     wandb_logger = WandbLogger(entity="line1029-academic-team",
-                               project="query-change",
-                               name=f"query-change-question:{seed}")
+                               project=f"{experiment_name}-{experiment_idx:03}",
+                               name=run_name)
     dataloader = Dataloader(config.model_name, False, config.batch_size, config.batch_size, True,
                                             config.train_path, config.dev_path, config.test_path, config.predict_path)
 
@@ -38,8 +43,7 @@ def main(seed):
         lr_scheduler=config.lr_scheduler
         ) # yapf: disable
 
-    ver = set_version()
-    model_path = f"{get_time_str()}_{next(ver):0>4}"
+    model_path = f"{experiment_name}_{get_time_str()}_{seed_idx:0>4}"
 
     # gpu가 없으면 accelerator='cpu', 있으면 accelerator='gpu'
     trainer = pl.Trainer(
@@ -77,13 +81,19 @@ def main(seed):
     path_dir = '/opt/ml/level2_klue-nlp-11/save'
     file_list = os.listdir(path_dir)
     for file in file_list:
-        if file.startswith(model_path):
+        if file.startswith(model_path) and file.endswith(".ckpt"):
             path = os.path.join(path_dir, file)
-            trainer.test(model=TypedEntityMarkerPuncModel.load_from_checkpoint(path), datamodule=dataloader)
+            model = TypedEntityMarkerPuncModel.load_from_checkpoint(path)
+            save_path = os.path.expanduser(path[:-4] + "pt")
+            torch.save(model, save_path)
+            trainer.test(model=model, datamodule=dataloader)
             break
     wandb.finish()
 
 
 if __name__ == "__main__":
-    for i in range(5):
-        main(i)
+    experiment_name = "Test"
+    experiment_idx = 1
+    is_random = False
+    for i in range(3):
+        main(i, is_random, experiment_name, experiment_idx)

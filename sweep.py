@@ -5,9 +5,10 @@ from utils.callbacks import *
 from dataloader import *
 from models import *
 import wandb
+import os
 
 
-def main():
+def main(is_random, experiment_name, experiment_idx):
     # HP Tuning
     # Sweep을 통해 실행될 학습 코드 작성
     sweep_config = {
@@ -66,21 +67,28 @@ def main():
 
         with wandb.init(config=config) as run:
             config = wandb.config
+            seed_idx = next(ver)
             # set seed
-            seed = get_seed()
-            set_seed(*seed)
-            run.name = f"seed:{'_'.join(map(str,seed))}"
+            if is_random:
+                seed = get_seed()
+                set_seed(seed)
+                run.name = f"{experiment_name}_seed:{'_'.join(map(str,seed))}"
+            else:
+                set_seed(seed_idx, False)
+                run.name = f"{experiment_name}_seed:{seed_idx}"
 
-            wandb_logger = WandbLogger(project="query-change-remove-punc-sweep")
+            wandb_logger = WandbLogger(project=f"{experiment_name}-{experiment_idx:03}")
             dataloader = Dataloader(config.model_name, False, config.batch_size, config.batch_size,
-                                                    True, "~/dataset/train/train_final.csv", "~/dataset/train/val_final.csv",
-                                                    "~/dataset/train/val_final.csv", "~/dataset/test/test_data.csv")
+                                                    True, "~/dataset/train/train_final.csv",
+                                                    "~/dataset/train/val_final.csv", "~/dataset/train/dummy.csv",
+                                                    "~/dataset/train/dummy.csv")
             warmup_steps = total_steps = 0.
             if "warm_up_ratio" in config:
-                total_steps = (32470 // (config.batch_size * 2) + (32470 %
-                                                                   (config.batch_size * 2) != 0)) * config.max_epoch
-                warmup_steps = int(config.warm_up_ratio * (32470 // (config.batch_size * 2) +
-                                                           (32470 % (config.batch_size * 2) != 0)))
+                num_samples = pd.read_csv("~/dataset/train/train_final.csv").shape[0]
+                total_steps = (num_samples // (config.batch_size * 2) +
+                               (num_samples % (config.batch_size * 2) != 0)) * config.max_epoch
+                warmup_steps = int(config.warm_up_ratio * (num_samples // (config.batch_size * 2) +
+                                                           (num_samples % (config.batch_size * 2) != 0)))
             model = TypedEntityMarkerPuncModel(
                 config.model_name,                           # model name
                 config.learning_rate,                        # lr
@@ -91,6 +99,9 @@ def main():
                 # config.LDAM_start,
                 lr_scheduler=config.lr_scheduler
                 ) # yapf: disable
+
+            model_path = f"{experiment_name}_{get_time_str()}_{seed_idx:0>4}"
+
             # gpu가 없으면 accelerator='cpu', 있으면 accelerator='gpu'
             trainer = pl.Trainer(
                 # fast_dev_run=True,                    # 검증용
@@ -99,7 +110,7 @@ def main():
                 accelerator='gpu',                      # GPU 사용
                 # # dataloader를 매 epoch마다 reload해서 resampling
                 # reload_dataloaders_every_n_epochs=1,
-                accumulate_grad_batches=2,              # 4step만큼 합친 후 역전파
+                accumulate_grad_batches=2,              # 2step만큼 합친 후 역전파
                 max_epochs=config.max_epoch,                           # 최대 epoch 수
                 logger=wandb_logger,                    # wandb logger 사용
                 log_every_n_steps=1,                    # 1 step마다 로그 기록
@@ -107,7 +118,7 @@ def main():
                 callbacks=[
                     # learning rate를 매 step마다 기록
                     LearningRateMonitor(logging_interval='step'),
-                    EarlyStopping(                      # validation pearson이 8번 이상 개선되지 않으면 학습을 종료
+                    EarlyStopping(                      # validation f1이 8번 이상 개선되지 않으면 학습을 종료
                         'val_f1',
                         patience=8,
                         mode='max',
@@ -115,7 +126,7 @@ def main():
                     ),
                     CustomModelCheckpoint(
                         './save/',
-                        f'klue_re_{get_time_str()}_{next(ver):0>4}_{{val_f1:.4f}}',
+                        model_path+'_{val_f1:.4f}',
                         monitor='val_f1',
                         save_top_k=1,
                         mode='max'
@@ -123,18 +134,34 @@ def main():
                 ]
             ) # yapf: disable
             trainer.fit(model=model, datamodule=dataloader) # 모델 학습
+            path_dir = '/opt/ml/level2_klue-nlp-11/save'
+            file_list = os.listdir(path_dir)
+            for file in file_list:
+                if file.startswith(model_path) and file.endswith(".ckpt"):
+                    path = os.path.join(path_dir, file)
+                    model = TypedEntityMarkerPuncModel.load_from_checkpoint(path)
+                    save_path = os.path.expanduser(path[:-4] + "pt")
+                    torch.save(model, save_path)
+                    if os.path.isfile(path):
+                        os.remove(path)
+
+                    # trainer.test(model=model, datamodule=dataloader)
+                    break
 
     # Sweep 생성
     sweep_id = wandb.sweep(
-        sweep=sweep_config,              # config 딕셔너리 추가,
-        entity="line1029-academic-team", # 팀 이름
-        project="query-change-remove-punc-sweep"      # project의 이름 추가
+        sweep=sweep_config,                              # config 딕셔너리 추가,
+        entity="line1029-academic-team",                 # 팀 이름
+        project=f"{experiment_name}-{experiment_idx:03}" # project의 이름 추가
     )
     wandb.agent(
-        sweep_id=sweep_id,               # sweep의 정보를 입력
-        function=sweep_train,            # train이라는 모델을 학습하는 코드를
-        count=80                         # 총 n회 실행
+        sweep_id=sweep_id,                               # sweep의 정보를 입력
+        function=sweep_train,                            # train이라는 모델을 학습하는 코드를
+        count=5                                          # 총 n회 실행
     )
 
 if __name__ == "__main__":
-    main()
+    is_random = False
+    experiment_name = "experiment_name"
+    experiment_idx = 1
+    main(is_random, experiment_name, experiment_idx)

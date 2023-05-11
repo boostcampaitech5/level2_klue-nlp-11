@@ -16,20 +16,23 @@ def num_to_label(label):
     return origin_label
 
 
-def main(path):
+def main(path: str):
     # wandb_logger = WandbLogger(project="klue-re")
     dataloader = Dataloader('/opt/ml/level2_klue-nlp-11/tapt_model', False, 12, 12, True, "~/dataset/train/val_final.csv",
                                             "~/dataset/train/val_final.csv", "~/dataset/train/val_final.csv",
                                             "~/dataset/test/test_data.csv")
-
-    model = TypedEntityMarkerPuncModel.load_from_checkpoint("./save/" + path)
+    if path.endswith(".ckpt"):
+        model = TypedEntityMarkerPuncModel.load_from_checkpoint("./save/" + path)
+        end_idx = -5
+    elif path.endswith(".pt"):
+        model = torch.load("./save/" + path)
+        end_idx = -3
 
     # gpu가 없으면 accelerator='cpu', 있으면 accelerator='gpu'
     trainer = pl.Trainer(
         gpus = 1,
         accelerator='gpu'
     ) # yapf: disable
-
 
     # trainer.test(model=model, datamodule=dataloader)
     predictions_prob = torch.cat(trainer.predict(model=model, datamodule=dataloader))
@@ -41,7 +44,7 @@ def main(path):
     output = pd.read_csv("~/dataset/test/test_data.csv")
     output["pred_label"] = predictions
     output["probs"] = predictions_prob
-    output.to_csv(f"{path[:-5]}.csv", index=False)
+    output.to_csv(f"{path[:end_idx]}.csv", index=False)
 
 
 if __name__ == "__main__":
