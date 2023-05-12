@@ -14,10 +14,10 @@ def main(seed_idx, is_random, experiment_name, experiment_idx):
     if is_random:
         seed = get_seed()
         set_seed(*seed)
-        run_name = f"{experiment_name}_seed:{'_'.join(map(str, seed))}"
+        run_name = f"{experiment_name}_no_punc_seed:{'_'.join(map(str, seed))}"
     else:
         set_seed(seed_idx, is_random)
-        run_name = f"{experiment_name}_seed:{seed_idx}"
+        run_name = f"{experiment_name}_no_punc_seed:{seed_idx}"
 
     wandb_logger = WandbLogger(entity="line1029-academic-team",
                                project=f"{experiment_name}-{experiment_idx:03}",
@@ -43,7 +43,7 @@ def main(seed_idx, is_random, experiment_name, experiment_idx):
         lr_scheduler=config.lr_scheduler
         ) # yapf: disable
 
-    model_path = f"{experiment_name}_{get_time_str()}_{seed_idx:0>4}"
+    model_path = f"{experiment_name}_{seed_idx:0>4}"
 
     # gpu가 없으면 accelerator='cpu', 있으면 accelerator='gpu'
     trainer = pl.Trainer(
@@ -61,17 +61,17 @@ def main(seed_idx, is_random, experiment_name, experiment_idx):
 
             LearningRateMonitor(logging_interval='step'), # learning rate를 매 step마다 기록
             EarlyStopping(                      # validation pearson이 8번 이상 개선되지 않으면 학습을 종료
-                'val_loss',
+                'val_f1',
                 patience=8,
-                mode='min',
+                mode='max',
                 check_finite=False
             ),
             CustomModelCheckpoint(
                 './save/',
                 model_path + '_{val_f1:.4f}',
-                monitor='val_loss',
+                monitor='val_f1',
                 save_top_k=1,
-                mode='min'
+                mode='max'
             )
         ]
     ) # yapf: disable
@@ -92,8 +92,8 @@ def main(seed_idx, is_random, experiment_name, experiment_idx):
 
 
 if __name__ == "__main__":
-    experiment_name = "Test"
+    experiment_name = "query-sentence-punc"
     experiment_idx = 1
     is_random = False
-    for i in range(3):
+    for i in range(4):
         main(i, is_random, experiment_name, experiment_idx)
