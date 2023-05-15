@@ -1,6 +1,6 @@
-model_name: klue/roberta-large
+model_name: snunlp/KR-ELECTRA-discriminator
 batch_size: 32
-max_epoch: 12
+max_epoch: 30
 lr_scheduler: cosine_annealing
 shuffle: true
 learning_rate: 2e-05
@@ -10,4 +10,4 @@ test_path: ~/dataset/train/val_final.csv
 predict_path: ~/dataset/test/test_data.csv
 weight_decay: 0.01
 warm_up_ratio: 0.1
-loss_func: CE
+loss_func: FL
