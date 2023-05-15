@@ -119,7 +119,7 @@ def main(is_random, experiment_name, experiment_idx):
                     # learning rate를 매 step마다 기록
                     LearningRateMonitor(logging_interval='step'),
                     EarlyStopping(                      # validation f1이 8번 이상 개선되지 않으면 학습을 종료
-                        'val_acc',
+                        'val_f1',
                         patience=8,
                         mode='max',
                         check_finite=False
@@ -127,7 +127,7 @@ def main(is_random, experiment_name, experiment_idx):
                     CustomModelCheckpoint(
                         './save/',
                         model_path+'_{val_acc:.4f}_{val_f1:.4f}',
-                        monitor='val_acc',
+                        monitor='val_f1',
                         save_top_k=1,
                         mode='max'
                     )
