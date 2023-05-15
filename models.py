@@ -1,8 +1,7 @@
 import pickle as pickle
 from typing import Any
 from transformers import (AutoTokenizer, AutoConfig, AutoModelForSequenceClassification, Trainer, TrainingArguments,
-                          RobertaConfig, RobertaTokenizer, RobertaForSequenceClassification, AutoModel,
-                          RobertaModel)
+                          RobertaConfig, RobertaTokenizer, RobertaForSequenceClassification, AutoModel, RobertaModel)
 import transformers
 import torch
 from torch import nn
@@ -13,6 +12,8 @@ from utils.metrics import *
 from utils.callbacks import *
 import torch.nn.functional as F
 import wandb
+from sklearn.metrics import accuracy_score, recall_score, precision_score, f1_score
+
 
 class FullyConnectedLayer(nn.Module):
 
@@ -295,6 +296,90 @@ class TypedEntityMarkerPuncModel(BaseModel):
         logits = self(x, ss=ss, os=os)
         preds = logits.argmax(-1)
         self.log("test_f1", klue_re_micro_f1(preds, y) * 100)
+
+    def predict_step(self, batch, batch_idx):
+        x, y, ss, os = batch
+        logits = self(x, ss=ss, os=os)
+        return logits
+
+
+class BCModel(BaseModel):
+
+    def __init__(
+            self,
+            model_name,            # pretrained model name
+            lr,
+            weight_decay,
+            loss_func,             # loss function type
+            warmup_steps,          # warm up steps for learning rate scheduler
+            total_steps,           # epochs * iteration per epoch, for linear decay scheduler
+            LDAM_start=500,
+            lr_scheduler="linear", # scheduler type
+            threshold=0.5):
+        super().__init__(model_name, lr, weight_decay, loss_func, warmup_steps, total_steps, LDAM_start, lr_scheduler)
+        self.save_hyperparameters()
+        self.loss_func = nn.BCEWithLogitsLoss()
+        self.classifier = nn.Sequential(
+            nn.Dropout(p=0.2),
+            nn.Linear(self.config.hidden_size * 3, self.config.hidden_size * 2),
+            nn.GELU(),
+            nn.Dropout(p=0.2),
+            nn.Linear(self.config.hidden_size * 2, self.config.hidden_size),
+            nn.GELU(),
+            nn.Linear(self.config.hidden_size, 1)
+        ) # yapf: disable
+        self.threshold = threshold
+
+    def forward(self, input_ids=None, ss=None, os=None, **kwargs):
+
+        outputs = self.plm(input_ids)
+
+        seq_output = outputs[0]
+        pooled_output = outputs[1]
+        idx = torch.arange(input_ids.size(0)).to(input_ids.device)
+        ss_emb = seq_output[idx, ss]
+        os_emb = seq_output[idx, os]
+        h = torch.cat((pooled_output, ss_emb, os_emb), dim=-1)
+        logits = self.classifier(h)
+
+        return logits
+
+    def training_step(self, batch, batch_idx):
+        # re-balancing ldam weight
+        if isinstance(self.loss_func, LDAMLoss) and self.trainer.global_step == 1000:
+            beta = 0.9999
+            effectice_num = 1.0 - torch.pow(beta, torch.tensor(num_per_cls))
+            w = (1.0 - beta) / effectice_num
+            w = w / w.sum() * 30
+            self.LDAM_weight = w
+            self.loss_func = LDAMLoss(weight=self.LDAM_weight)
+        x, y, ss, os = batch
+        y = y.bool().float().unsqueeze(1)
+        logits = self(x, ss=ss, os=os)
+        loss = self.loss_func(logits, y)
+        self.log("train_loss", loss)
+        return loss
+
+    def validation_step(self, batch, batch_idx):
+        if self.trainer.global_step == 0:
+            wandb.define_metric('val_f1', summary='max')
+        x, y, ss, os = batch
+        y = y.bool().float().unsqueeze(1)
+        logits = self(x, ss=ss, os=os)
+        preds = logits >= self.threshold
+        loss = self.loss_func(logits, y)
+        self.log("val_loss", loss)
+        self.log("val_f1", f1_score(y.cpu(), preds.cpu()) * 100)
+        # self.log("val_auprc", klue_re_auprc(logits, y) * 100)
+        self.log("val_acc", accuracy_score(y.cpu(), preds.cpu()) * 100)
+        return loss
+
+    def test_step(self, batch, batch_idx):
+        x, y, ss, os = batch
+        y = y.bool().float().unsqueeze(1)
+        logits = self(x, ss=ss, os=os)
+        preds = logits >= self.threshold
+        self.log("test_f1", accuracy_score(y.cpu(), preds.cpu()) * 100)
 
     def predict_step(self, batch, batch_idx):
         x, y, ss, os = batch
