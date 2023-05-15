@@ -22,8 +22,8 @@ def main(seed_idx, is_random, experiment_name, experiment_idx):
     wandb_logger = WandbLogger(entity="line1029-academic-team",
                                project=f"{experiment_name}-{experiment_idx:03}",
                                name=run_name)
-    dataloader = Dataloader(config.model_name, False, config.batch_size, config.batch_size, True,
-                                            config.train_path, config.dev_path, config.test_path, config.predict_path)
+    dataloader = Dataloader(config.model_name, False, config.batch_size, config.batch_size, True, config.train_path,
+                            config.dev_path, config.test_path, config.predict_path)
 
     warmup_steps = total_steps = 0.
     if "warm_up_ratio" in config._asdict().keys():
