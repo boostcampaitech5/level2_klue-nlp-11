@@ -14,10 +14,10 @@ def main(seed_idx, is_random, experiment_name, experiment_idx):
     if is_random:
         seed = get_seed()
         set_seed(*seed)
-        run_name = f"{experiment_name}_no_punc_seed:{'_'.join(map(str, seed))}"
+        run_name = f"{experiment_name}_snunlp_seed:{'_'.join(map(str, seed))}"
     else:
         set_seed(seed_idx, is_random)
-        run_name = f"{experiment_name}_no_punc_seed:{seed_idx}"
+        run_name = f"{experiment_name}_snunlp_seed:{seed_idx}"
 
     wandb_logger = WandbLogger(entity="line1029-academic-team",
                                project=f"{experiment_name}-{experiment_idx:03}",
@@ -92,8 +92,10 @@ def main(seed_idx, is_random, experiment_name, experiment_idx):
 
 
 if __name__ == "__main__":
-    experiment_name = "query-sentence-punc"
+    experiment_name = "Loss function"
     experiment_idx = 1
     is_random = False
-    for i in range(4):
-        main(i, is_random, experiment_name, experiment_idx)
+    
+    seed_list = [1,5,6,7]
+    # for i in seed_list:
+    main(1, is_random, experiment_name, experiment_idx)

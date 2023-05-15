@@ -66,6 +66,8 @@ class BaseModel(pl.LightningModule):
             self.loss_func = LDAMLoss(weight=self.LDAM_weight)
         elif loss_func == "CE":
             self.loss_func = nn.CrossEntropyLoss()
+        elif loss_func == "FL":
+            self.loss_func = FocalLoss()
         else:
             raise ValueError("CB, LDAM이외의 함수는 아직 지원x")
 
