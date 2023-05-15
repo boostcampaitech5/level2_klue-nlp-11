@@ -53,7 +53,7 @@ if __name__ == "__main__":
                                                            # 'klue_re_23-05-07-17-33_0026_val_f1=88.8911.ckpt',
                                                            # 'klue_re_23-05-07-22-18_0031_val_f1=87.7723.ckpt',
                                                            # 'klue_re_23-05-07-13-56_0022_val_f1=88.5217.ckpt',
-        '23-05-10-16-03_0001_val_f1=85.7794.ckpt'
+        'query-sentence-no-punc_0001_val_f1=86.6449.ckpt'
     ]
     for path in save_path:
         main(path)
