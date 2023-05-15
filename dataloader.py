@@ -7,6 +7,7 @@ import pytorch_lightning as pl
 
 ENTITY_MAP = {"ORG": "단체", "PER": "사람", "DAT": "날짜", "LOC": "위치", "POH": "기타", "NOH": "수량"}
 
+
 class Dataset(torch.utils.data.Dataset):
 
     def __init__(self, inputs, targets=list(), ss_arr=None, os_arr=None):
@@ -52,7 +53,7 @@ class Dataloader(pl.LightningDataModule):
         self.use_tokens = use_tokens
 
         self.tokenizer = transformers.AutoTokenizer.from_pretrained(model_name)
-        
+
         # special token : use ENTITY MARKERS – ENTITY START and entity type
         # source : https://aclanthology.org/P19-1279.pdf
         if self.use_tokens:
@@ -113,7 +114,7 @@ class Dataloader(pl.LightningDataModule):
         except Exception as e:
             print(e)
             targets = []
-            
+
         # 텍스트 데이터 전처리
         inputs, ss_arr, os_arr = self.tokenize(data)
 
@@ -129,15 +130,15 @@ class Dataloader(pl.LightningDataModule):
             _, obj_start, obj_end, obj_entity = [
                 x.split(": ")[1].strip("'") for x in item[self.obj_column][1:-1].split(", '")
             ]
-            
+
             subj_start = int(subj_start)
             subj_end = int(subj_end)
             obj_start = int(obj_start)
             obj_end = int(obj_end)
-            
+
             tmp = []
-            if self.use_tokens: #entity marker
-                if subj_start < obj_start: #sub 객체의 위치가 obj 객체 위치보다 앞에 있을 때
+            if self.use_tokens:                                                                                        #entity marker
+                if subj_start < obj_start:                                                                             #sub 객체의 위치가 obj 객체 위치보다 앞에 있을 때
                     tmp.extend([
                         item[self.text_column][:subj_start],
                         f'[SUBJ] [{subj_entity}] ' + item[self.text_column][subj_start:subj_end + 1] + ' [/SUBJ]',
@@ -154,8 +155,8 @@ class Dataloader(pl.LightningDataModule):
                     ])
                 else:
                     raise ValueError("subj-obj overlapped")
-                
-            else: #typed entity marker punctuation
+
+            else:                                                                                                     #typed entity marker punctuation
                 if subj_start < obj_start:
                     tmp.extend([
                         item[self.text_column][:subj_start],
@@ -172,21 +173,21 @@ class Dataloader(pl.LightningDataModule):
                     ])
                 else:
                     raise ValueError("subj-obj overlapped")
-                
+
             ss = len(self.tokenizer(tmp[0], add_special_tokens=False)['input_ids']) + 1
             os = ss + len(self.tokenizer(tmp[1], add_special_tokens=False)['input_ids']) + len(
                 self.tokenizer(tmp[2], add_special_tokens=False)['input_ids'])
-            
+
             if subj_start > obj_start:
                 ss, os = os, ss
-            
+
             #query change
-            text_entity_verbalized = f'{item[self.text_column][obj_start:obj_end + 1]}와 {item[self.text_column][subj_start:subj_end + 1]}의 관계는 {ENTITY_MAP[subj_entity]}와 {ENTITY_MAP[obj_entity]}의 관계이다.' 
-            
+            text_entity_verbalized = f'{item[self.text_column][obj_start:obj_end + 1]}와 {item[self.text_column][subj_start:subj_end + 1]}의 관계는 {ENTITY_MAP[subj_entity]}와 {ENTITY_MAP[obj_entity]}의 관계이다.'
+
             offset = len(self.tokenizer(text_entity_verbalized, add_special_tokens=False)["input_ids"]) + 1
             ss += offset
             os += offset
-            
+
             text = "".join(tmp)
             outputs = self.tokenizer(text_entity_verbalized,
                                      text,
@@ -197,7 +198,7 @@ class Dataloader(pl.LightningDataModule):
             res.append(outputs['input_ids'])
             ss_arr.append(ss)
             os_arr.append(os)
-            
+
         return res, ss_arr, os_arr
 
     def setup(self, stage='fit'):
@@ -225,4 +226,7 @@ class Dataloader(pl.LightningDataModule):
 
     def predict_dataloader(self):
         return torch.utils.data.DataLoader(self.predict_dataset, batch_size=self.val_batch_size)
-    
+
+
+# Create a new class with a different name but the same structure
+EntityVerbalizedDataloader = type('EntityVerbalizedDataloader', (Dataloader,), {})

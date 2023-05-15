@@ -14,10 +14,10 @@ def main(seed_idx, is_random, experiment_name, experiment_idx):
     if is_random:
         seed = get_seed()
         set_seed(*seed)
-        run_name = f"{experiment_name}_snunlp_seed:{'_'.join(map(str, seed))}"
+        run_name = f"{experiment_name}_seed:{'_'.join(map(str, seed))}"
     else:
         set_seed(seed_idx, is_random)
-        run_name = f"{experiment_name}_snunlp_seed:{seed_idx}"
+        run_name = f"{experiment_name}_seed:{seed_idx}"
 
     wandb_logger = WandbLogger(entity="line1029-academic-team",
                                project=f"{experiment_name}-{experiment_idx:03}",
@@ -43,7 +43,7 @@ def main(seed_idx, is_random, experiment_name, experiment_idx):
         lr_scheduler=config.lr_scheduler
         ) # yapf: disable
 
-    model_path = f"{experiment_name}_{seed_idx:0>4}"
+    model_path = f"{experiment_name}_{get_time_str()}_{seed_idx:0>4}"
 
     # gpu가 없으면 accelerator='cpu', 있으면 accelerator='gpu'
     trainer = pl.Trainer(
@@ -86,16 +86,16 @@ def main(seed_idx, is_random, experiment_name, experiment_idx):
             model = TypedEntityMarkerPuncModel.load_from_checkpoint(path)
             save_path = os.path.expanduser(path[:-4] + "pt")
             torch.save(model, save_path)
+            if os.path.isfile(path):
+                os.remove(path)
             trainer.test(model=model, datamodule=dataloader)
             break
     wandb.finish()
 
 
 if __name__ == "__main__":
-    experiment_name = "Loss function"
+    experiment_name = "Test"
     experiment_idx = 1
     is_random = False
-    
-    seed_list = [1,5,6,7]
     # for i in seed_list:
     main(1, is_random, experiment_name, experiment_idx)

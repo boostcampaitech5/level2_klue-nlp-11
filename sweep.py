@@ -18,7 +18,7 @@ def main(is_random, experiment_name, experiment_idx):
                 'values': [1e-5]
             },
             'max_epoch': {
-                'values': [12]
+                'values': [6]
             },
             'batch_size': {
                 'values': [16, 24, 32]
@@ -39,7 +39,7 @@ def main(is_random, experiment_name, experiment_idx):
                 'values': [0, 0.01]
             },
             'loss_func': {
-                'values': ["CE"]
+                'values': ["FL"]
             },
             # 'LDAM_start': {
             #     'values': [250, 500, 1000]
@@ -78,13 +78,13 @@ def main(is_random, experiment_name, experiment_idx):
                 run.name = f"{experiment_name}_seed:{seed_idx}"
 
             wandb_logger = WandbLogger(project=f"{experiment_name}-{experiment_idx:03}")
-            dataloader = Dataloader(config.model_name, False, config.batch_size, config.batch_size,
-                                                    True, "~/dataset/train/train_final.csv",
-                                                    "~/dataset/train/val_final.csv", "~/dataset/train/dummy.csv",
-                                                    "~/dataset/train/dummy.csv")
+            dataloader = Dataloader(config.model_name, False, config.batch_size, config.batch_size, True,
+                                    "~/dataset/train/train_final_roundtrip_rtt_en_clean.csv",
+                                    "~/dataset/train/val_final_roundtrip_rtt_en_clean.csv", "~/dataset/train/dummy.csv",
+                                    "~/dataset/train/dummy.csv")
             warmup_steps = total_steps = 0.
             if "warm_up_ratio" in config:
-                num_samples = pd.read_csv("~/dataset/train/train_final.csv").shape[0]
+                num_samples = pd.read_csv("~/dataset/train/train_final_roundtrip_rtt_en_clean.csv").shape[0]
                 total_steps = (num_samples // (config.batch_size * 2) +
                                (num_samples % (config.batch_size * 2) != 0)) * config.max_epoch
                 warmup_steps = int(config.warm_up_ratio * (num_samples // (config.batch_size * 2) +
@@ -126,7 +126,7 @@ def main(is_random, experiment_name, experiment_idx):
                     ),
                     CustomModelCheckpoint(
                         './save/',
-                        model_path+'_{val_f1:.4f}',
+                        model_path+'_{val_acc:.4f}_{val_f1:.4f}',
                         monitor='val_f1',
                         save_top_k=1,
                         mode='max'
@@ -157,11 +157,12 @@ def main(is_random, experiment_name, experiment_idx):
     wandb.agent(
         sweep_id=sweep_id,                               # sweep의 정보를 입력
         function=sweep_train,                            # train이라는 모델을 학습하는 코드를
-        count=5                                          # 총 n회 실행
+        count=10                                         # 총 n회 실행
     )
 
+
 if __name__ == "__main__":
-    is_random = False
-    experiment_name = "experiment_name"
+    is_random = True
+    experiment_name = "Test"
     experiment_idx = 1
     main(is_random, experiment_name, experiment_idx)
