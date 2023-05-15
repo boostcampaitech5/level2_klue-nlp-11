@@ -39,7 +39,7 @@ def main(is_random, experiment_name, experiment_idx):
                 'values': [0, 0.01]
             },
             'loss_func': {
-                'values': ["CE"]
+                'values': ["FL"]
             },
             # 'LDAM_start': {
             #     'values': [250, 500, 1000]
@@ -79,16 +79,17 @@ def main(is_random, experiment_name, experiment_idx):
 
             wandb_logger = WandbLogger(project=f"{experiment_name}-{experiment_idx:03}")
             dataloader = Dataloader(config.model_name, False, config.batch_size, config.batch_size, True,
-                                    "~/dataset/train/train_final.csv", "~/dataset/train/val_final.csv",
-                                    "~/dataset/train/dummy.csv", "~/dataset/train/dummy.csv")
+                                    "~/dataset/train/train_final_roundtrip_rtt_en_clean.csv",
+                                    "~/dataset/train/val_final_roundtrip_rtt_en_clean.csv", "~/dataset/train/dummy.csv",
+                                    "~/dataset/train/dummy.csv")
             warmup_steps = total_steps = 0.
             if "warm_up_ratio" in config:
-                num_samples = pd.read_csv("~/dataset/train/train_final.csv").shape[0]
+                num_samples = pd.read_csv("~/dataset/train/train_final_roundtrip_rtt_en_clean.csv").shape[0]
                 total_steps = (num_samples // (config.batch_size * 2) +
                                (num_samples % (config.batch_size * 2) != 0)) * config.max_epoch
                 warmup_steps = int(config.warm_up_ratio * (num_samples // (config.batch_size * 2) +
                                                            (num_samples % (config.batch_size * 2) != 0)))
-            model = BCModel(
+            model = TypedEntityMarkerPuncModel(
                 config.model_name,                           # model name
                 config.learning_rate,                        # lr
                 config.weight_decay,                         # weight decay
@@ -138,7 +139,7 @@ def main(is_random, experiment_name, experiment_idx):
             for file in file_list:
                 if file.startswith(model_path) and file.endswith(".ckpt"):
                     path = os.path.join(path_dir, file)
-                    model = BCModel.load_from_checkpoint(path)
+                    model = TypedEntityMarkerPuncModel.load_from_checkpoint(path)
                     save_path = os.path.expanduser(path[:-4] + "pt")
                     torch.save(model, save_path)
                     if os.path.isfile(path):
@@ -162,6 +163,6 @@ def main(is_random, experiment_name, experiment_idx):
 
 if __name__ == "__main__":
     is_random = True
-    experiment_name = "binary_classification"
+    experiment_name = "Test"
     experiment_idx = 1
     main(is_random, experiment_name, experiment_idx)
