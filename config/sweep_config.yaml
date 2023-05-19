@@ -1,0 +1,44 @@
+method: random
+metric:
+  goal: maximize
+  name: val_f1
+parameters:
+  batch_size:
+    values:
+    - 16
+    - 24
+    - 32
+  learning_rate:
+    values:
+    - 1.0e-05
+    - 2.0e-05
+  loss_func:
+    values:
+    - CE
+    - FL
+  lr_scheduler:
+    values:
+    - cosine_annealing
+  max_epoch:
+    values:
+    - 6
+  model_name:
+    values:
+    - klue/roberta-large
+  warm_up_ratio:
+    values:
+    - 0
+    - 0.1
+    - 0.3
+    - 0.6
+  weight_decay:
+    values:
+    - 0
+    - 0.01
+
+
+file_path:
+  train_path: ~/dataset/train/train_final_roundtrip_rtt_en_clean.csv
+  dev_path: ~/dataset/train/val_final_roundtrip_rtt_en_clean.csv
+  test_path: ~/dataset/train/dummy.csv
+  predict_path: ~/dataset/train/dummy.csv
