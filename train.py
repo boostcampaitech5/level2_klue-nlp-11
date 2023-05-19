@@ -27,7 +27,7 @@ def main():
                                                                  (config.batch_size * 2) != 0)) * config.max_epoch
         warmup_steps = int(config.warm_up_ratio * (num_samples // (config.batch_size * 2) +
                                                    (num_samples % (config.batch_size * 2) != 0)))
-    model = TypedEntityMarkerPuncModel(
+    model = LSTMClassifierModel(
         config.model_name,                           # model name
         config.learning_rate,                        # lr
         config.weight_decay,                         # weight decay
@@ -79,7 +79,7 @@ def main():
     for file in file_list:
         if file.startswith(model_path) and file.endswith(".ckpt"):
             path = os.path.join(path_dir, file)
-            model = TypedEntityMarkerPuncModel.load_from_checkpoint(path)
+            model = LSTMClassifierModel.load_from_checkpoint(path)
             save_path = os.path.expanduser(path[:-4] + "pt")
             torch.save(model, save_path)
             trainer.test(model=model, datamodule=dataloader)
