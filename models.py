@@ -301,3 +301,80 @@ class TypedEntityMarkerPuncModel(BaseModel):
         x, y, ss, os = batch
         logits = self(x, ss=ss, os=os)
         return logits
+
+
+class GRUClassifierModel(BaseModel):
+
+    def __init__(
+            self,
+            model_name,            # pretrained model name
+            lr,
+            weight_decay,
+            loss_func,             # loss function type
+            warmup_steps,          # warm up steps for learning rate scheduler
+            total_steps,           # epochs * iteration per epoch, for linear decay scheduler
+            LDAM_start=500,
+            lr_scheduler="linear", # scheduler type
+    ):
+        super().__init__(model_name, lr, weight_decay, loss_func, warmup_steps, total_steps, LDAM_start, lr_scheduler)
+        self.save_hyperparameters()
+        self.GRU = nn.Sequential(nn.GRU(1024, 1024, dropout=0.2, batch_first=True, bidirectional=True))
+        self.classifier = nn.Sequential(
+            nn.Dropout(p=0.2),
+            nn.Linear(1024*2, 1024),
+            nn.GELU(),
+            nn.Dropout(p=0.2),
+            nn.Linear(1024, 512),
+            nn.GELU(),
+            nn.Linear(512, 30)
+        ) # yapf: disable
+
+    def forward(self, input_ids=None, ss=None, os=None, **kwargs):
+
+        plm_outputs = self.plm(input_ids)
+
+        seq_output = plm_outputs[0]
+        pooled_output = plm_outputs[1]
+        gru_input = torch.cat((pooled_output.unsqueeze(1), seq_output), dim=1)
+        _, h = self.GRU(gru_input)
+        n_h = h.transpose(0, 1).contiguous().view(h.shape[1], h.shape[0] * h.shape[2])
+        logits = self.classifier(n_h)
+
+        return logits
+
+    def training_step(self, batch, batch_idx):
+        # re-balancing ldam weight
+        if isinstance(self.loss_func, LDAMLoss) and self.trainer.global_step == 1000:
+            beta = 0.9999
+            effectice_num = 1.0 - torch.pow(beta, torch.tensor(num_per_cls))
+            w = (1.0 - beta) / effectice_num
+            w = w / w.sum() * 30
+            self.LDAM_weight = w
+            self.loss_func = LDAMLoss(weight=self.LDAM_weight)
+        x, y, ss, os = batch
+        logits = self(x, ss=ss, os=os)
+        loss = self.loss_func(logits, y)
+        self.log("train_loss", loss)
+        return loss
+
+    def validation_step(self, batch, batch_idx):
+        if self.trainer.global_step == 0:
+            wandb.define_metric('val_f1', summary='max')
+        x, y, ss, os = batch
+        logits = self(x, ss=ss, os=os)
+        loss = self.loss_func(logits, y)
+        preds = logits.argmax(-1)
+        self.log("val_loss", loss)
+        self.log("val_f1", klue_re_micro_f1(preds, y) * 100)
+        return loss
+
+    def test_step(self, batch, batch_idx):
+        x, y, ss, os = batch
+        logits = self(x, ss=ss, os=os)
+        preds = logits.argmax(-1)
+        self.log("test_f1", klue_re_micro_f1(preds, y) * 100)
+
+    def predict_step(self, batch, batch_idx):
+        x, y, ss, os = batch
+        logits = self(x, ss=ss, os=os)
+        return logits
