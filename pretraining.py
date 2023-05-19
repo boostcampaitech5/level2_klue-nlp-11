@@ -3,7 +3,7 @@ from transformers import RobertaForMaskedLM, LineByLineTextDataset, DataCollator
 from transformers import Trainer, TrainingArguments
 from transformers.trainer_utils import get_last_checkpoint
 from utils.seed import *  # seed setting module
-from utils.callbacks import *
+from utils.utils import *
 from dataloader import *
 from models import *
 

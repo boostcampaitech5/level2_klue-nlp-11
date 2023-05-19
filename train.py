@@ -1,7 +1,7 @@
 from pytorch_lightning.callbacks import LearningRateMonitor, EarlyStopping, ModelCheckpoint
 from pytorch_lightning.loggers import WandbLogger
 from utils.seed import * # seed setting module
-from utils.callbacks import *
+from utils.utils import *
 from dataloader import *
 from models import *
 from config.config import config
@@ -88,7 +88,8 @@ def main(seed_idx, is_random, experiment_name, experiment_idx):
             torch.save(model, save_path)
             if os.path.isfile(path):
                 os.remove(path)
-            trainer.test(model=model, datamodule=dataloader)
+            # val_f1.max와 test_f1이 같은지 체크
+            # trainer.test(model=model, datamodule=dataloader)
             break
     wandb.finish()
 
@@ -97,5 +98,7 @@ if __name__ == "__main__":
     experiment_name = "Test"
     experiment_idx = 1
     is_random = False
+    # fixed seed
+    # seed_list = [13, 42, 104]
     # for i in seed_list:
     main(1, is_random, experiment_name, experiment_idx)

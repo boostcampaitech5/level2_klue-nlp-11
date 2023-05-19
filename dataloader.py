@@ -33,8 +33,17 @@ class Dataset(torch.utils.data.Dataset):
 
 class Dataloader(pl.LightningDataModule):
 
-    def __init__(self, model_name, use_tokens, train_batch_size, val_batch_size, shuffle, train_path, dev_path,
-                 test_path, predict_path):
+    def __init__(self,
+                 model_name,
+                 use_tokens,
+                 train_batch_size,
+                 val_batch_size,
+                 shuffle,
+                 train_path,
+                 dev_path,
+                 test_path,
+                 predict_path,
+                 query="default"):
         super().__init__()
         self.model_name = model_name
         self.train_batch_size = train_batch_size
@@ -51,6 +60,7 @@ class Dataloader(pl.LightningDataModule):
         self.test_dataset = None
         self.predict_dataset = None
         self.use_tokens = use_tokens
+        self.query = query
 
         self.tokenizer = transformers.AutoTokenizer.from_pretrained(model_name)
 
@@ -112,7 +122,7 @@ class Dataloader(pl.LightningDataModule):
 
             targets = label_to_num(target_labels)
         except Exception as e:
-            print(e)
+            print("Warning: Target Label Missing")
             targets = []
 
         # 텍스트 데이터 전처리
@@ -181,8 +191,13 @@ class Dataloader(pl.LightningDataModule):
             if subj_start > obj_start:
                 ss, os = os, ss
 
-            #query change
-            text_entity_verbalized = f'{item[self.text_column][obj_start:obj_end + 1]}와 {item[self.text_column][subj_start:subj_end + 1]}의 관계는 {ENTITY_MAP[subj_entity]}와 {ENTITY_MAP[obj_entity]}의 관계이다.'
+            # select query
+            if self.query == "default":
+                text_entity_verbalized = f'{item[self.text_column][subj_start:subj_end + 1]}와 {item[self.text_column][obj_start:obj_end + 1]}의 관계는 {ENTITY_MAP[subj_entity]}와 {ENTITY_MAP[obj_entity]}의 관계이다.'
+            if self.query == "abbreviation":
+                text_entity_verbalized = f'{item[self.text_column][obj_start:obj_end + 1]}는 {ENTITY_MAP[subj_entity]}인 {item[self.text_column][subj_start:subj_end + 1]}의 {ENTITY_MAP[obj_entity]}이다.'
+            if self.query == "question":
+                text_entity_verbalized = f'{item[self.text_column][subj_start:subj_end + 1]}와 {item[self.text_column][obj_start:obj_end + 1]}의 관계는 {ENTITY_MAP[subj_entity]}와 {ENTITY_MAP[obj_entity]}의 관계일까?'
 
             offset = len(self.tokenizer(text_entity_verbalized, add_special_tokens=False)["input_ids"]) + 1
             ss += offset

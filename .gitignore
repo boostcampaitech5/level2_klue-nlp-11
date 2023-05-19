@@ -139,13 +139,3 @@ dmypy.json
 *.ckpt
 *.pt
 *.csv
-pororo/
-**/test
-
-tapt_model
-dataset
-*.txt
-*.
-config
-models.py
-.*
