@@ -17,10 +17,11 @@ def num_to_label(label):
 
 
 def main(path: str):
+    # for dev data
     # wandb_logger = WandbLogger(project="klue-re")
-    dataloader = Dataloader('/opt/ml/level2_klue-nlp-11/tapt_model', False, 12, 12, True, "~/dataset/train/val_final.csv",
-                                            "~/dataset/train/val_final.csv", "~/dataset/train/val_final.csv",
-                                            "~/dataset/test/test_data.csv")
+
+    dataloader = Dataloader("klue/roberta-large", False, 32, 32, True, "~/dataset/train/dummy.csv",
+                            "~/dataset/train/dummy.csv", "~/dataset/train/dummy.csv", "~/dataset/test/test_data.csv")
     if path.endswith(".ckpt"):
         model = TypedEntityMarkerPuncModel.load_from_checkpoint("./save/" + path)
         end_idx = -5
@@ -34,22 +35,22 @@ def main(path: str):
         accelerator='gpu'
     ) # yapf: disable
 
+    # for dev data
     # trainer.test(model=model, datamodule=dataloader)
+
     predictions_prob = torch.cat(trainer.predict(model=model, datamodule=dataloader))
     predictions_prob = F.softmax(predictions_prob, -1)
     predictions_label = predictions_prob.argmax(-1).tolist()
     predictions_prob = predictions_prob.tolist()
     predictions = num_to_label(predictions_label)
 
-    output = pd.read_csv("~/dataset/test/test_data.csv")
+    output = pd.read_csv("~/dataset/sample_submission.csv")
     output["pred_label"] = predictions
     output["probs"] = predictions_prob
     output.to_csv(f"{path[:end_idx]}.csv", index=False)
 
 
 if __name__ == "__main__":
-    save_path = [
-        'Loss function_0001_val_f1=85.6506.ckpt'
-    ]
+    save_path = ['tmp_path']
     for path in save_path:
         main(path)

@@ -1,18 +1,14 @@
 import pickle as pickle
-from typing import Any
-from transformers import (AutoTokenizer, AutoConfig, AutoModelForSequenceClassification, Trainer, TrainingArguments,
-                          RobertaConfig, RobertaTokenizer, RobertaForSequenceClassification, AutoModel, RobertaModel)
+from transformers import AutoConfig, RobertaModel
 import transformers
 import torch
 from torch import nn
-from pytorch_lightning.callbacks import ModelCheckpoint
 import pytorch_lightning as pl
 from utils.losses import *
 from utils.metrics import *
-from utils.callbacks import *
-import torch.nn.functional as F
+from utils.utils import *
 import wandb
-from sklearn.metrics import accuracy_score, recall_score, precision_score, f1_score
+from sklearn.metrics import accuracy_score, f1_score
 
 
 class FullyConnectedLayer(nn.Module):

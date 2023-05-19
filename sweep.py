@@ -1,58 +1,19 @@
 from pytorch_lightning.callbacks import LearningRateMonitor, EarlyStopping, ModelCheckpoint
 from pytorch_lightning.loggers import WandbLogger
 from utils.seed import * # seed setting module
-from utils.callbacks import *
+from utils.utils import *
 from dataloader import *
 from models import *
 import wandb
 import os
+import yaml
 
 
 def main(is_random, experiment_name, experiment_idx):
     # HP Tuning
     # Sweep을 통해 실행될 학습 코드 작성
-    sweep_config = {
-        'method': 'random',                        # random: 임의의 값의 parameter 세트를 선택
-        'parameters': {
-            'learning_rate': {
-                'values': [1e-5]
-            },
-            'max_epoch': {
-                'values': [6]
-            },
-            'batch_size': {
-                'values': [16, 24, 32]
-            },
-            'model_name': {
-                'values': [
-                    'klue/roberta-large',
-                    # 'monologg/koelectra-base-v3-discriminator',
-                    # 'beomi/KcELECTRA-base',
-                    # 'rurupang/roberta-base-finetuned-sts',
-                    # 'snunlp/KR-ELECTRA-discriminator'
-                ]
-            },
-            'warm_up_ratio': {
-                'values': [0, 0.1, 0.3, 0.6]
-            },
-            'weight_decay': {
-                'values': [0, 0.01]
-            },
-            'loss_func': {
-                'values': ["FL"]
-            },
-            # 'LDAM_start': {
-            #     'values': [250, 500, 1000]
-            # },
-            'lr_scheduler': {
-                'values': ["cosine_annealing"]
-            }
-        },
-        'metric': {
-            'name': 'val_f1',
-            'goal': 'maximize'
-        }
-    } # yapf: disable
+    with open("./config/sweep_config.yaml", "r") as f:
+        sweep_config = yaml.load(f, Loader=yaml.FullLoader)
 
     ver = set_version()
 
@@ -79,12 +40,11 @@ def main(is_random, experiment_name, experiment_idx):
 
             wandb_logger = WandbLogger(project=f"{experiment_name}-{experiment_idx:03}")
             dataloader = Dataloader(config.model_name, False, config.batch_size, config.batch_size, True,
-                                    "~/dataset/train/train_final_roundtrip_rtt_en_clean.csv",
-                                    "~/dataset/train/val_final_roundtrip_rtt_en_clean.csv", "~/dataset/train/dummy.csv",
-                                    "~/dataset/train/dummy.csv")
+                                    sweep_config["file_path"]["train_path"], sweep_config["file_path"]["dev_path"],
+                                    sweep_config["file_path"]["test_path"], sweep_config["file_path"]["predict_path"])
             warmup_steps = total_steps = 0.
             if "warm_up_ratio" in config:
-                num_samples = pd.read_csv("~/dataset/train/train_final_roundtrip_rtt_en_clean.csv").shape[0]
+                num_samples = pd.read_csv(sweep_config["file_path"]["train_path"]).shape[0]
                 total_steps = (num_samples // (config.batch_size * 2) +
                                (num_samples % (config.batch_size * 2) != 0)) * config.max_epoch
                 warmup_steps = int(config.warm_up_ratio * (num_samples // (config.batch_size * 2) +
@@ -126,7 +86,7 @@ def main(is_random, experiment_name, experiment_idx):
                     ),
                     CustomModelCheckpoint(
                         './save/',
-                        model_path+'_{val_acc:.4f}_{val_f1:.4f}',
+                        model_path+'_{val_f1:.4f}',
                         monitor='val_f1',
                         save_top_k=1,
                         mode='max'
@@ -144,8 +104,8 @@ def main(is_random, experiment_name, experiment_idx):
                     torch.save(model, save_path)
                     if os.path.isfile(path):
                         os.remove(path)
-
-                    # trainer.test(model=model, datamodule=dataloader)
+                                                            # val_f1.max와 test_f1이 같은지 체크
+                                                            # trainer.test(model=model, datamodule=dataloader)
                     break
 
     # Sweep 생성
@@ -157,7 +117,7 @@ def main(is_random, experiment_name, experiment_idx):
     wandb.agent(
         sweep_id=sweep_id,                               # sweep의 정보를 입력
         function=sweep_train,                            # train이라는 모델을 학습하는 코드를
-        count=10                                         # 총 n회 실행
+        count=30                                         # 총 n회 실행
     )
 
 
