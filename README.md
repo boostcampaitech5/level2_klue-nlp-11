@@ -54,7 +54,7 @@
 ## Skill
 
 - Pytorch
-- HunngingFace
+- HuggingFace
 - Pandas
 
 <br>
